@@ -5,7 +5,10 @@ import { Search, Heart, ShoppingBag, User, X } from "lucide-react";
 import { useCartStore } from "../store/useCartStore";
 
 export function Navbar() {
-  const cartCount = useCartStore((state) => state.cartCount);
+  // ⚡ FIX ROBUSTE : On récupère les articles et on calcule le total exact (comme dans le Header)
+  const items = useCartStore((state) => state.items) || [];
+  const cartCount = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
+
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -59,7 +62,6 @@ export function Navbar() {
                   <X size={14} />
                 </button>
               )}
-              {/* Vrai bouton cliquable obligatoire pour déclencher l'action sur mobile */}
               <button type="submit" className="text-[#2C1810] hover:text-[#C9A96E] p-1 cursor-pointer">
                 <Search size={15} />
               </button>
@@ -82,6 +84,7 @@ export function Navbar() {
 
           <Link href="/panier" className="p-1.5 hover:text-[#C9A96E] transition-colors relative">
             <ShoppingBag size={18} />
+            {/* ⚡ FIX : Utilisation de cartCount comme un nombre standard propre */}
             {cartCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 bg-black text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center font-mono shadow-sm">
                 {cartCount}
@@ -89,7 +92,6 @@ export function Navbar() {
             )}
           </Link>
 
-          {/* ⚡ SÉCURISÉ : Redirige maintenant vers l'espace client /compte */}
           <Link href="/compte" className="p-1.5 hover:text-[#C9A96E] transition-colors">
             <User size={18} />
           </Link>
