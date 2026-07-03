@@ -12,7 +12,8 @@ export function Header() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   
-  const itemCount = useCartStore(s => s.itemCount ? s.itemCount() : 0)
+  const items = useCartStore(s => s.items) || [];
+  const itemCount = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
   const favCount = useFavoritesStore(s => s.favorites?.length || 0)
 
   useEffect(() => {
