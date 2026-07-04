@@ -11,18 +11,44 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const slug = searchParams.get("slug");
+    const idParam = searchParams.get("id") || searchParams.get("slug");
 
-    // ⚡ SI ON DEMANDE UN SEUL PRODUIT (URGENT POUR LA PAGE DÉTAIL)
-    if (slug) {
-      const product = await prisma.product.findUnique({
-        where: { slug },
-        include: { category: true }
-      });
+    // ⚡ SI ON CHERCHE UN PRODUIT UNIQUE
+    if (idParam) {
+      let product = null;
+
+      // Étape 1 : On tente de chercher par ID direct (si c'est un texte/UUID/CUID)
+      try {
+        product = await prisma.product.findUnique({
+          where: { id: idParam },
+          include: { category: true }
+        });
+      } catch (e) {}
+
+      // Étape 2 : Si rien n'est trouvé et que c'est un nombre, on tente la conversion en entier (Int)
+      if (!product && /^\d+$/.test(idParam)) {
+        try {
+          product = await prisma.product.findUnique({
+            where: { id: parseInt(idParam, 10) as any },
+            include: { category: true }
+          });
+        } catch (e) {}
+      }
+
+      // Étape 3 : Si toujours rien, on cherche par le Slug textuel
+      if (!product) {
+        try {
+          product = await prisma.product.findFirst({
+            where: { slug: idParam },
+            include: { category: true }
+          });
+        } catch (e) {}
+      }
+
       return NextResponse.json({ product });
     }
 
-    // ⚡ LOGIQUE BOUTIQUE : ON NE CHARGE QUE LES PRODUITS (PAS LES COMMANDES)
+    // ⚡ LOGIQUE BOUTIQUE GLOBALE
     const products = await prisma.product.findMany({ 
       orderBy: { createdAt: 'desc' },
       include: { category: true } 
