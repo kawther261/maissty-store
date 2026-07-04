@@ -18,7 +18,6 @@ function BoutiqueContent() {
 
     const loadBoutiqueProducts = async () => {
       try {
-        // ✨ FIX : Ajout de cache: "no-store" pour tuer définitivement le cache navigateur
         const res = await fetch("/api/admin", { cache: "no-store" });
         const data = await res.json();
         if (data.products) {
@@ -55,8 +54,6 @@ function BoutiqueContent() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      
-      {/* Barre supérieure */}
       <div className="flex flex-col sm:flex-row items-center justify-between border-b border-[#F0DDD8] pb-6 mb-10 gap-4">
         <div className="space-y-1.5 text-center sm:text-left">
           <h1 className="font-playfair text-2xl font-bold uppercase tracking-wide">La Boutique</h1>
@@ -70,7 +67,6 @@ function BoutiqueContent() {
           )}
         </div>
         
-        {/* Catégories */}
         <div className="flex flex-wrap gap-2 text-xs uppercase tracking-wider font-medium">
           {["all", "parfums", "sacs", "maquillage"].map((cat) => (
             <button
@@ -88,7 +84,6 @@ function BoutiqueContent() {
         </div>
       </div>
 
-      {/* Grille des fiches produits */}
       {filteredProducts.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl border border-[#F0DDD8] shadow-sm max-w-xl mx-auto p-8 space-y-2">
           <p className="font-playfair font-bold text-base">Aucun résultat trouvé</p>

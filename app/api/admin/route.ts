@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from '@prisma/client';
 
-// ⚡ LIGNES MAGIQUES : Force Vercel à lire Neon en direct à chaque seconde !
+// ⚡ Tue le cache de Vercel pour afficher les nouveautés instantanément
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -9,6 +9,7 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
+// 🔄 LIRE DEPUIS NEON ET TRADUIRE POUR L'INTERFACE
 export async function GET() {
   try {
     const products = await prisma.product.findMany({ 
@@ -37,6 +38,7 @@ export async function GET() {
   }
 }
 
+// 💾 ACTIONS DE CRÉATION / MODIFICATION / SUPPRESSION
 export async function POST(req: Request) {
   try {
     const body = await req.json();
