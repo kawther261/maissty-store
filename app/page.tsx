@@ -1,21 +1,30 @@
-"use client";
-import { useState, useEffect } from "react";
+export const dynamic = 'force-dynamic';
+
 import { Hero } from "../components/Hero";
 import { ProductCard } from "../components/ProductCard";
 import { Testimonials } from "../components/Testimonials";
 import Link from "next/link";
 import Image from "next/image";
 
-export default function Home() {
-  const [products, setProducts] = useState<any[]>([]);
+// 🔌 Connexion directe à Prisma intégrée (Plus besoin d'import externe !)
+import { PrismaClient } from '@prisma/client';
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+const prisma = globalForPrisma.prisma || new PrismaClient();
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-  // 🔄 Chargement dynamique des vrais produits depuis l'espace Admin (localStorage)
-  useEffect(() => {
-    const savedProducts = localStorage.getItem("maisssty_products");
-    if (savedProducts) {
-      setProducts(JSON.parse(savedProducts));
-    }
-  }, []);
+export default async function Home() {
+  let products: any[] = [];
+
+  try {
+    // 🔄 On récupère les vrais produits directement depuis ton compte Neon en ligne
+    products = await prisma.product.findMany({
+      orderBy: {
+        id: 'desc'
+      }
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des produits Neon:", error);
+  }
 
   // Sélectionner les 4 derniers produits ajoutés pour la section Nouveautés
   const latestProducts = products.slice(0, 4);
@@ -25,7 +34,7 @@ export default function Home() {
       {/* Écran de bannière principal dynamique */}
       <Hero />
       
-      {/* Section Catégories - Synchronisée sur image_842dfd.jpg */}
+      {/* Section Catégories */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-10">
           <h2 className="text-sm tracking-[0.3em] text-[#2C1810] font-playfair font-bold uppercase">
@@ -45,17 +54,14 @@ export default function Home() {
               href={`/boutique?category=${item.filter}`} 
               className="group relative h-64 rounded-2xl overflow-hidden block border border-[#F0DDD8]/40 shadow-sm transition-all duration-500 hover:-translate-y-1"
             >
-              {/* Voile d'assombrissement au survol */}
               <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors z-10" />
               
-              {/* Badge Blanc Central */}
               <div className="absolute inset-0 flex items-center justify-center z-20">
                 <span className="text-[#2C1810] font-playfair uppercase tracking-[0.2em] text-[11px] font-medium bg-white px-7 py-3.5 rounded-sm shadow-sm border border-[#F0DDD8] transition-all duration-300 group-hover:bg-black group-hover:text-white group-hover:border-black">
                   {item.cat}
                 </span>
               </div>
 
-              {/* Rendu de votre image personnelle */}
               <Image 
                 src={item.img}
                 alt={item.cat}
@@ -69,7 +75,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 2. Section Nouveautés Dynamiques Réparée */}
+      {/* Section Nouveautés Dynamiques Connectée à Neon */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-12">
         <div className="text-center mb-10">
           <h2 className="text-sm tracking-[0.3em] text-[#2C1810] font-playfair font-bold uppercase">
@@ -85,8 +91,6 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {latestProducts.map((prod) => {
-              
-              // 🪄 DETECTEUR AUTOMATIQUE D'IMAGE : Capte .images, .img ou .image envoyé par l'admin
               const targetImg = 
                 (prod.images && prod.images.length > 0 ? prod.images[0] : null) || 
                 prod.img || 
@@ -100,7 +104,7 @@ export default function Home() {
                     id: prod.id,
                     name: prod.name,
                     price: prod.price,
-                    images: [targetImg], // Convertit proprement la bonne image en tableau pour ton ProductCard
+                    images: [targetImg],
                     shortDesc: prod.shortDesc || ""
                   }} 
                 />
