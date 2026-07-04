@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from '@prisma/client';
 
-// ⚡ Tue le cache de Vercel pour afficher les nouveautés instantanément
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -9,13 +8,21 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-// 🔄 LIRE DEPUIS NEON ET TRADUIRE POUR L'INTERFACE
 export async function GET() {
   try {
-    const products = await prisma.product.findMany({ 
+    const rawProducts = await prisma.product.findMany({ 
       orderBy: { createdAt: 'desc' },
       include: { category: true } 
     });
+
+    // ✨ LE FIX : On transforme la catégorie en texte simple ("parfums") 
+    // et on extrait l'image pour éviter que l'écran Admin ne plante !
+    const products = rawProducts.map(p => ({
+      ...p,
+      category: p.category?.name || "parfums",
+      img: p.images && p.images.length > 0 ? p.images[0] : "/placeholder.jpg"
+    }));
+
     const rawOrders = await prisma.order.findMany({ orderBy: { createdAt: 'desc' } });
     
     const orders = rawOrders.map(o => ({
@@ -38,7 +45,6 @@ export async function GET() {
   }
 }
 
-// 💾 ACTIONS DE CRÉATION / MODIFICATION / SUPPRESSION
 export async function POST(req: Request) {
   try {
     const body = await req.json();
