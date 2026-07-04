@@ -16,13 +16,12 @@ function BoutiqueContent() {
     setSelectedCategory(params.get("category") || "all");
     setSearchQuery(params.get("search") || "");
 
-    // 🔄 Charger les produits en direct depuis Neon Cloud
     const loadBoutiqueProducts = async () => {
       try {
-        const res = await fetch("/api/admin");
+        // ✨ FIX : Ajout de cache: "no-store" pour tuer définitivement le cache navigateur
+        const res = await fetch("/api/admin", { cache: "no-store" });
         const data = await res.json();
         if (data.products) {
-          // 🪄 Normalisation magique : on adapte les données Neon au format attendu par ton design
           const normalized = data.products.map((p: any) => ({
             ...p,
             img: p.images && p.images.length > 0 ? p.images[0] : p.img || "/placeholder.jpg",

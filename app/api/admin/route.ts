@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from '@prisma/client';
 
+// ⚡ LIGNES MAGIQUES : Force Vercel à lire Neon en direct à chaque seconde !
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 export async function GET() {
   try {
-    // ✨ FIX : Ajout de "include" pour lier les noms des catégories à la boutique
     const products = await prisma.product.findMany({ 
       orderBy: { createdAt: 'desc' },
       include: { category: true } 
