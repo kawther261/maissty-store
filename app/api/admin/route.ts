@@ -5,10 +5,13 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-// 🔄 1. LIRE DEPUIS NEON ET TRADUIRE POUR TON DASHBOARD
 export async function GET() {
   try {
-    const products = await prisma.product.findMany({ orderBy: { createdAt: 'desc' } });
+    // ✨ FIX : Ajout de "include" pour lier les noms des catégories à la boutique
+    const products = await prisma.product.findMany({ 
+      orderBy: { createdAt: 'desc' },
+      include: { category: true } 
+    });
     const rawOrders = await prisma.order.findMany({ orderBy: { createdAt: 'desc' } });
     
     const orders = rawOrders.map(o => ({
@@ -31,7 +34,6 @@ export async function GET() {
   }
 }
 
-// 💾 2. ÉCRIRE / MODIFIER / SUPPRIMER SUR NEON
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -39,29 +41,26 @@ export async function POST(req: Request) {
 
     if (action === "SAVE_PRODUCT") {
       const generatedSlug = `${(data.name || "product").toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-')}-${Date.now()}`;
-
       const catName = (data.category || "parfums").trim();
+      
       let category = await prisma.category.findFirst({
         where: { name: { equals: catName, mode: 'insensitive' } }
       });
 
-      // ✨ BOUCLIER SÉCURITÉ DOUBLE-CLIC
       if (!category) {
         try {
           category = await prisma.category.create({
             data: { name: catName, slug: catName.toLowerCase().replace(/[\s_-]+/g, '-') }
           });
         } catch (createError) {
-          // Si elle a été créée par un clic simultané, on la récupère simplement sans planter !
           category = await prisma.category.findFirst({
             where: { name: { equals: catName, mode: 'insensitive' } }
           });
         }
       }
 
-      // Sécurité ultime au cas où
       if (!category) {
-        return NextResponse.json({ error: "Erreur lors de la récupération de la catégorie." }, { status: 400 });
+        return NextResponse.json({ error: "Erreur catégorie" }, { status: 400 });
       }
 
       if (data.editingId) {

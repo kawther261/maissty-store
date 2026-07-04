@@ -16,10 +16,26 @@ function BoutiqueContent() {
     setSelectedCategory(params.get("category") || "all");
     setSearchQuery(params.get("search") || "");
 
-    const savedProducts = localStorage.getItem("maisssty_products");
-    if (savedProducts) {
-      setProducts(JSON.parse(savedProducts));
-    }
+    // 🔄 Charger les produits en direct depuis Neon Cloud
+    const loadBoutiqueProducts = async () => {
+      try {
+        const res = await fetch("/api/admin");
+        const data = await res.json();
+        if (data.products) {
+          // 🪄 Normalisation magique : on adapte les données Neon au format attendu par ton design
+          const normalized = data.products.map((p: any) => ({
+            ...p,
+            img: p.images && p.images.length > 0 ? p.images[0] : p.img || "/placeholder.jpg",
+            category: p.category?.name || p.category || "parfums"
+          }));
+          setProducts(normalized);
+        }
+      } catch (err) {
+        console.error("Erreur lors du chargement des produits de la boutique :", err);
+      }
+    };
+
+    loadBoutiqueProducts();
   }, [searchParams]);
 
   const filteredProducts = products.filter((p) => {
@@ -82,7 +98,6 @@ function BoutiqueContent() {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
           {filteredProducts.map((prod) => (
-            /* ⚡ LE FIX : On envoie le produit entier (prod) directement sans le détruire */
             <ProductCard key={prod.id} product={prod} />
           ))}
         </div>
