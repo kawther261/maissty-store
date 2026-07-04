@@ -2,17 +2,18 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useCartStore } from "../../../store/useCartStore"; 
-import { ShoppingBag, ShieldCheck, Truck, Star, ArrowLeft, Heart, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
+import { ShoppingBag, Star, ArrowLeft, Heart, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
 import Link from "next/link";
 
 export default function ProductDetailPage() {
   const params = useParams();
-  const productId = params?.id;
+  const productId = params?.id as string;
 
   const addItem = useCartStore((state: any) => state.addItem);
   const [product, setProduct] = useState<any>(null);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [loading, setLoading] = useState(true);
 
   // 📝 ÉTATS POUR LES VRAIS AVIS
   const [reviews, setReviews] = useState<any[]>([]);
@@ -20,37 +21,60 @@ export default function ProductDetailPage() {
   const [newReviewComment, setNewReviewComment] = useState("");
   const [newReviewRating, setNewReviewRating] = useState(5);
 
-  // Charger le produit et ses avis correspondants
+  // Charger le produit depuis Neon Cloud et ses avis correspondants
   useEffect(() => {
     if (!productId) return;
     
-    // 1. Charger le produit
-    const savedProducts = localStorage.getItem("maisssty_products");
-    if (savedProducts) {
-      const allProds = JSON.parse(savedProducts);
-      const foundProduct = allProds.find((p: any) => p.id === productId);
-      setProduct(foundProduct);
-    }
+    const loadProductAndReviews = async () => {
+      try {
+        // 1. Charger le produit en direct depuis Neon Cloud par son ID
+        const res = await fetch(`/api/products?id=${productId}`, { cache: "no-store" });
+        const data = await res.json();
+        
+        if (data.product) {
+          const p = data.product;
+          // Normalisation des données pour ton interface graphique
+          setProduct({
+            ...p,
+            category: p.category?.name || p.category || "parfums"
+          });
+        }
+      } catch (err) {
+        console.error("Erreur lors du chargement du produit depuis Neon :", err);
+      } finally {
+        setLoading(false);
+      }
 
-    // 2. Charger les vrais avis de ce produit spécifique
-    const savedReviews = localStorage.getItem(`maisssty_reviews_${productId}`);
-    if (savedReviews) {
-      setReviews(JSON.parse(savedReviews));
-    } else {
-      // Avis d'ambiance de départ pour faire joli et pro
-      const defaultReviews = [
-        { id: 1, name: "Amel B.", rating: 5, comment: "La qualité du cuir est incroyable, les finitions sont parfaites. Je recommande !", date: "12/05/2026" },
-        { id: 2, name: "Yasmine K.", rating: 4, comment: "Très beau sac, emballage soigné et livraison rapide en 48h.", date: "02/06/2026" }
-      ];
-      setReviews(defaultReviews);
-      localStorage.setItem(`maisssty_reviews_${productId}`, JSON.stringify(defaultReviews));
-    }
+      // 2. Charger les vrais avis de ce produit spécifique (conserve le localStorage pour les avis)
+      const savedReviews = localStorage.getItem(`maisssty_reviews_${productId}`);
+      if (savedReviews) {
+        setReviews(JSON.parse(savedReviews));
+      } else {
+        const defaultReviews = [
+          { id: 1, name: "Amel B.", rating: 5, comment: "La qualité du cuir est incroyable, les finitions sont parfaites. Je recommande !", date: "12/05/2026" },
+          { id: 2, name: "Yasmine K.", rating: 4, comment: "Très beau sac, emballage soigné et livraison rapide en 48h.", date: "02/06/2026" }
+        ];
+        setReviews(defaultReviews);
+        localStorage.setItem(`maisssty_reviews_${productId}`, JSON.stringify(defaultReviews));
+      }
+    };
+
+    loadProductAndReviews();
   }, [productId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FDF6F3] flex flex-col items-center justify-center text-xs text-[#8B6860]">
+        <p>Chargement de votre article Maisssty...</p>
+        <Link href="/boutique" className="mt-4 text-black underline">Retourner à la boutique</Link>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
       <div className="min-h-screen bg-[#FDF6F3] flex flex-col items-center justify-center text-xs text-[#8B6860]">
-        <p>Chargement de votre article Maisssty...</p>
+        <p>Article introuvable ou inexistant.</p>
         <Link href="/boutique" className="mt-4 text-black underline">Retourner à la boutique</Link>
       </div>
     );
@@ -75,7 +99,6 @@ export default function ProductDetailPage() {
     alert(`✨ ${quantity}x ${product.name} ajouté(s) au panier !`);
   };
 
-  // 🪄 ACTION : Ajouter un véritable avis
   const handleAddReview = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newReviewName.trim() || !newReviewComment.trim()) return;
@@ -92,14 +115,12 @@ export default function ProductDetailPage() {
     setReviews(updatedReviews);
     localStorage.setItem(`maisssty_reviews_${productId}`, JSON.stringify(updatedReviews));
 
-    // Reset du formulaire
     setNewReviewName("");
     setNewReviewComment("");
     setNewReviewRating(5);
     alert("❤️ Merci ! Votre avis a été publié avec succès.");
   };
 
-  // Calcul de la moyenne des notes
   const averageRating = reviews.length > 0 
     ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) 
     : "5.0";
@@ -145,7 +166,6 @@ export default function ProductDetailPage() {
               <p className="text-[10px] uppercase font-bold tracking-[0.25em] text-[#C9A96E]">{product.category}</p>
               <h1 className="font-playfair font-bold text-2xl sm:text-3xl leading-tight">{product.name}</h1>
               
-              {/* Étoiles dynamiques basées sur les vrais avis */}
               <div className="flex items-center gap-1 text-amber-500">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} size={13} fill={i < Math.round(Number(averageRating)) ? "currentColor" : "none"} className={i < Math.round(Number(averageRating)) ? "" : "text-neutral-300"} />
@@ -177,10 +197,8 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* ✨ NOUVELLE SECTION : VRAIS AVIS CLIENTS (AUTHENTIQUE) */}
+        {/* SECTION AVIS */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pt-4">
-          
-          {/* LISTE DES COMMENTAIRES (À gauche) */}
           <div className="md:col-span-7 bg-white p-6 sm:p-8 rounded-3xl border border-[#F0DDD8]/60 shadow-sm space-y-6">
             <h2 className="font-playfair font-bold text-lg flex items-center gap-2">
               <MessageSquare size={18} /> Évaluations des clientes ({reviews.length})
@@ -202,7 +220,6 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {/* FORMULAIRE POUR AJOUTER UN AVIS (À droite) */}
           <div className="md:col-span-5 bg-white p-6 sm:p-8 rounded-3xl border border-[#F0DDD8]/60 shadow-sm space-y-4">
             <h3 className="font-playfair font-bold text-base">Donner votre avis</h3>
             
@@ -233,7 +250,6 @@ export default function ProductDetailPage() {
               </button>
             </form>
           </div>
-
         </div>
 
       </div>
