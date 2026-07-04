@@ -19,21 +19,23 @@ export default function AdminDashboard() {
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
-  // 🔄 Charger les données et écouter les ajouts de commandes en temps réel
+  // 🔄 Charger les données en direct depuis Neon Cloud via l'API
+  const loadData = async () => {
+    try {
+      const res = await fetch("/api/admin");
+      const data = await res.json();
+      if (data.products) setProducts(data.products);
+      if (data.orders) setOrders(data.orders);
+    } catch (err) {
+      console.error("Erreur de chargement des données cloud:", err);
+    }
+  };
+
   useEffect(() => {
-    const loadData = () => {
-      const savedProducts = localStorage.getItem("maisssty_products");
-      const savedOrders = localStorage.getItem("maisssty_orders");
-      if (savedProducts) setProducts(JSON.parse(savedProducts));
-      if (savedOrders) setOrders(JSON.parse(savedOrders));
-    };
-
-    loadData();
-
-    // ⚡ Détecte instantanément quand une cliente passe commande sur une autre page
-    window.addEventListener("storage", loadData);
-    return () => window.removeEventListener("storage", loadData);
-  }, []);
+    if (isAuthenticated) {
+      loadData();
+    }
+  }, [isAuthenticated]);
 
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,42 +43,45 @@ export default function AdminDashboard() {
     else alert("Mot de passe incorrect.");
   };
 
-  // 🪄 Outils de tri Drag & Drop
-  const handleDragStart = (index: number) => {
-    setDraggedIndex(index);
-  };
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-  };
+  // 🪄 Outils de tri Drag & Drop visuel
+  const handleDragStart = (index: number) => { setDraggedIndex(index); };
+  const handleDragOver = (e: React.DragEvent, index: number) => { e.preventDefault(); };
   const handleDrop = (index: number) => {
     if (draggedIndex === null || draggedIndex === index) return;
     const updatedProducts = [...products];
     const [draggedItem] = updatedProducts.splice(draggedIndex, 1);
     updatedProducts.splice(index, 0, draggedItem);
-    const finalProducts = updatedProducts.map((p, idx) => ({ ...p, position: idx + 1 }));
-    setProducts(finalProducts);
-    localStorage.setItem("maisssty_products", JSON.stringify(finalProducts));
+    setProducts(updatedProducts);
     setDraggedIndex(null);
   };
 
-  // 🛠️ Gestion des statuts de commandes
-  const handleStatusChange = (orderId: string, newStatus: string) => {
-    const updatedOrders = orders.map((order) => {
-      if (order.id === orderId) {
-        return { ...order, status: newStatus };
-      }
-      return order;
-    });
-    setOrders(updatedOrders);
-    localStorage.setItem("maisssty_orders", JSON.stringify(updatedOrders));
+  // 🛠️ Modifier le statut d'une commande sur Neon
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    try {
+      const res = await fetch("/api/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "UPDATE_ORDER_STATUS", data: { id: orderId, status: newStatus } })
+      });
+      if (res.ok) loadData();
+    } catch (error) {
+      alert("Erreur lors du changement de statut.");
+    }
   };
 
-  // 🗑️ Suppression d'une commande
-  const handleDeleteOrder = (orderId: string) => {
+  // 🗑️ Suppression d'une commande sur Neon
+  const handleDeleteOrder = async (orderId: string) => {
     if (confirm("Supprimer définitivement cette commande ?")) {
-      const updatedOrders = orders.filter((order) => order.id !== orderId);
-      setOrders(updatedOrders);
-      localStorage.setItem("maisssty_orders", JSON.stringify(updatedOrders));
+      try {
+        const res = await fetch("/api/admin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "DELETE_ORDER", data: { id: orderId } })
+        });
+        if (res.ok) loadData();
+      } catch (error) {
+        alert("Erreur lors de la suppression de la commande.");
+      }
     }
   };
 
@@ -99,7 +104,7 @@ export default function AdminDashboard() {
           canvas.height = height;
           const ctx = canvas.getContext("2d");
           ctx?.drawImage(img, 0, 0, width, height);
-          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
           resolve(compressedBase64);
         };
         img.src = event.target?.result as string;
@@ -125,38 +130,52 @@ export default function AdminDashboard() {
     setFormImages(formImages.filter((_, idx) => idx !== indexToRemove));
   };
 
-  const handleSaveProduct = (e: React.FormEvent) => {
+  // 💾 Sauvegarder ou Modifier un produit directement sur Neon Cloud
+  const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    let updatedProducts = [...products];
     const finalImages = formImages.length > 0 ? formImages : ["https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=500"];
 
-    if (editingId) {
-      updatedProducts = products.map(p => p.id === editingId ? {
-        ...p, name: formName, price: Number(formPrice), category: formCategory, shortDesc: formDesc, images: finalImages
-      } : p);
-    } else {
-      const newProd = {
-        id: "PROD-" + Date.now().toString(),
-        name: formName, price: Number(formPrice), category: formCategory, shortDesc: formDesc, images: finalImages,
-        position: products.length + 1
-      };
-      updatedProducts = [...products, newProd];
-    }
+    const payload = {
+      editingId: editingId,
+      name: formName,
+      price: Number(formPrice),
+      category: formCategory,
+      shortDesc: formDesc,
+      images: finalImages
+    };
 
     try {
-      setProducts(updatedProducts);
-      localStorage.setItem("maisssty_products", JSON.stringify(updatedProducts));
-      setIsModalOpen(false);
+      const res = await fetch("/api/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "SAVE_PRODUCT", data: payload })
+      });
+      
+      const result = await res.json();
+      if (result.success) {
+        await loadData(); // Recharge le catalogue à jour depuis Neon
+        setIsModalOpen(false);
+      } else {
+        alert("🚨 Erreur Cloud : " + result.error);
+      }
     } catch (error) {
-      alert("🚨 Erreur de stockage : Photos trop lourdes.");
+      alert("🚨 Connexion impossible avec la base de données.");
     }
   };
 
-  const handleDeleteProduct = (id: string) => {
+  // 🗑️ Supprimer un produit sur Neon Cloud
+  const handleDeleteProduct = async (id: string) => {
     if (confirm("Supprimer définitivement ce produit ?")) {
-      const updated = products.filter(p => p.id !== id);
-      setProducts(updated);
-      localStorage.setItem("maisssty_products", JSON.stringify(updated));
+      try {
+        const res = await fetch("/api/admin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "DELETE_PRODUCT", data: { id } })
+        });
+        if (res.ok) loadData();
+      } catch (error) {
+        alert("Erreur lors de la suppression du produit.");
+      }
     }
   };
 
@@ -165,8 +184,8 @@ export default function AdminDashboard() {
     setIsModalOpen(true);
   };
   const openEditModal = (p: any) => {
-    setEditingId(p.id); setFormName(p.name); setFormPrice(p.price.toString()); setFormCategory(p.category); setFormDesc(p.shortDesc); 
-    setFormImages(p.images || (p.img ? [p.img] : []));
+    setEditingId(p.id); setFormName(p.name); setFormPrice(p.price.toString()); setFormCategory(p.category); setFormDesc(p.shortDesc || ""); 
+    setFormImages(p.images || []);
     setIsModalOpen(true);
   };
 
