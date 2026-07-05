@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+// ✨ LE FIX : On réutilise la même connexion entre les clics (Ultra rapide !)
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
@@ -17,7 +18,6 @@ export async function GET(request: Request) {
     if (idParam) {
       let product = null;
 
-      // Étape 1 : On tente de chercher par ID direct (si c'est un texte/UUID/CUID)
       try {
         product = await prisma.product.findUnique({
           where: { id: idParam },
@@ -25,7 +25,6 @@ export async function GET(request: Request) {
         });
       } catch (e) {}
 
-      // Étape 2 : Si rien n'est trouvé et que c'est un nombre, on tente la conversion en entier (Int)
       if (!product && /^\d+$/.test(idParam)) {
         try {
           product = await prisma.product.findUnique({
@@ -35,7 +34,6 @@ export async function GET(request: Request) {
         } catch (e) {}
       }
 
-      // Étape 3 : Si toujours rien, on cherche par le Slug textuel
       if (!product) {
         try {
           product = await prisma.product.findFirst({
@@ -48,7 +46,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ product });
     }
 
-    // ⚡ LOGIQUE BOUTIQUE GLOBALE
+    // ⚡ LOGIQUE BOUTIQUE GLOBALE : REQUÊTE DIRECTE ET RAPIDE
     const products = await prisma.product.findMany({ 
       orderBy: { createdAt: 'desc' },
       include: { category: true } 
