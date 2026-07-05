@@ -19,7 +19,7 @@ function BoutiqueContent() {
     const loadBoutiqueProducts = async () => {
       try {
         // ✨ LE FIX ICI : On appelle l'API légère /api/products au lieu de /api/admin
-        const res = await fetch("/api/products", { cache: "no-store" });
+        const res = await fetch("/api/products");
         const data = await res.json();
         if (data.products) {
           const normalized = data.products.map((p: any) => ({
