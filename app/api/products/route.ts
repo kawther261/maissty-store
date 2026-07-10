@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 
     // ⚡ 1. RECHERCHE D'UN PRODUIT UNIQUE
     if (idParam) {
-      let product = null;
+      let product: any = null;
 
       try {
         product = await prisma.product.findUnique({
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
         } catch (e) {}
       }
 
-      // 🚨 Sécurité : Si pas dans Neon, on cherche dans nos produits de secours
+      // Sécurité fallback
       if (!product) {
         product = MOCK_PRODUCTS.find(p => p.id === idParam || p.slug === idParam) || null;
       }
@@ -64,7 +64,8 @@ export async function GET(request: Request) {
     }
 
     // ⚡ 2. RECHERCHE DE TOUS LES PRODUITS (BOUTIQUE)
-    let products = [];
+    // ✨ LE FIX EST ICI : On ajoute ": any[]" pour satisfaire TypeScript !
+    let products: any[] = [];
     try {
       products = await prisma.product.findMany({ 
         orderBy: { createdAt: 'desc' },
@@ -74,14 +75,12 @@ export async function GET(request: Request) {
       console.error("Neon en attente, bascule sur les données de secours.");
     }
 
-    // 🚨 LE TRUC MAGIQUE : Si Neon est vide ou dort, on affiche nos beaux produits d'office !
     if (!products || products.length === 0) {
       products = MOCK_PRODUCTS;
     }
 
     return NextResponse.json({ products });
   } catch (error: any) {
-    // Ultime barrière anti-crash
     return NextResponse.json({ products: MOCK_PRODUCTS });
   }
 }
