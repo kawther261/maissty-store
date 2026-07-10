@@ -4,20 +4,18 @@ import { PrismaClient } from '@prisma/client';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// Emplacement unique pour éviter les connexions multiples en développement
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-// 📦 CATALOGUE DES 46 PRODUITS (Sécurisé localement dans le code)
 const COEUR_ARTICLES = [
   // --- ZONE IMAGE_895FB8.JPG (PRODUITS 1 À 9) ---
   {
     id: "prod-1",
-    name: "Dior Addict Lip Glow Set",
+    name: "Blush Poudre Dior Backstage Rosy Glow",
     price: 3500,
-    shortDesc: "Coffret duo lèvres et soin iconique Dior.",
-    description: "Coffret duo lèvres et soin iconique Dior.",
+    shortDesc: "Le blush poudre iconique révélateur de couleur.",
+    description: "Le blush poudre iconique révélateur de couleur.",
     images: ["/produits/1.jpg", "/produits/1'.jpg"],
     img: "/produits/1.jpg",
     category: "maquillage",
@@ -25,10 +23,10 @@ const COEUR_ARTICLES = [
   },
   {
     id: "prod-2",
-    name: "Dior Addict Lip Glow Oil - Coral Variant",
-    price: 3200,
-    shortDesc: "Huile à lèvres brillante nourrissante.",
-    description: "Huile à lèvres brillante nourrissante.",
+    name: "Blush Make Me Blush YSL - Teinte 06",
+    price: 2600,
+    shortDesc: "Un blush floutant haut de gamme au fini mat velouté.",
+    description: "Un blush floutant haut de gamme au fini mat velouté.",
     images: ["/produits/2 (2).jpg", "/produits/2'.jpg"],
     img: "/produits/2 (2).jpg",
     category: "maquillage",
@@ -229,7 +227,7 @@ const COEUR_ARTICLES = [
     price: 4900,
     shortDesc: "Coffret de brumes parfumées iconiques brésiliennes.",
     description: "Coffret de brumes parfumées iconiques brésiliennes.",
-    images: ["/produits/20.jpeg", "/produits/20'.jpeg"],
+    images: ["/produits/20.jpeg", "/produits/20''.jpeg"],
     img: "/produits/20.jpeg",
     category: "parfums",
     stock: 99
@@ -380,37 +378,17 @@ const COEUR_ARTICLES = [
     stock: 99
   },
 
-  // --- ZONE DE SÉCURITÉ SUPPLÉMENTAIRE (PRODUITS 34 À 43) ---
-  {
-    id: "prod-34", name: "Article Sélection Luxe 34", price: 3000, shortDesc: "Produit de beauté haut de gamme.", description: "Description complète à venir.", images: ["/produits/34.jpeg"], img: "/produits/34.jpeg", category: "maquillage", stock: 99
-  },
-  {
-    id: "prod-35", name: "Article Sélection Luxe 35", price: 3000, shortDesc: "Produit de beauté haut de gamme.", description: "Description complète à venir.", images: ["/produits/35.jpeg"], img: "/produits/35.jpeg", category: "maquillage", stock: 99
-  },
-  {
-    id: "prod-36", name: "Article Sélection Luxe 36", price: 3000, shortDesc: "Produit de beauté haut de gamme.", description: "Description complète à venir.", images: ["/produits/36.jpeg"], img: "/produits/36.jpeg", category: "maquillage", stock: 99
-  },
-  {
-    id: "prod-37", name: "Article Sélection Luxe 37", price: 3000, shortDesc: "Produit de beauté haut de gamme.", description: "Description complète à venir.", images: ["/produits/37.jpeg"], img: "/produits/37.jpeg", category: "maquillage", stock: 99
-  },
-  {
-    id: "prod-38", name: "Article Sélection Luxe 38", price: 3000, shortDesc: "Produit de beauté haut de gamme.", description: "Description complète à venir.", images: ["/produits/38.jpeg"], img: "/produits/38.jpeg", category: "maquillage", stock: 99
-  },
-  {
-    id: "prod-39", name: "Article Sélection Luxe 39", price: 3000, shortDesc: "Produit de beauté haut de gamme.", description: "Description complète à venir.", images: ["/produits/39.jpeg"], img: "/produits/39.jpeg", category: "maquillage", stock: 99
-  },
-  {
-    id: "prod-40", name: "Article Sélection Luxe 40", price: 3000, shortDesc: "Produit de beauté haut de gamme.", description: "Description complète à venir.", images: ["/produits/40.jpeg"], img: "/produits/40.jpeg", category: "maquillage", stock: 99
-  },
-  {
-    id: "prod-41", name: "Article Sélection Luxe 41", price: 3000, shortDesc: "Produit de beauté haut de gamme.", description: "Description complète à venir.", images: ["/produits/41.jpeg"], img: "/produits/41.jpeg", category: "maquillage", stock: 99
-  },
-  {
-    id: "prod-42", name: "Article Sélection Luxe 42", price: 3000, shortDesc: "Produit de beauté haut de gamme.", description: "Description complète à venir.", images: ["/produits/42.jpeg"], img: "/produits/42.jpeg", category: "maquillage", stock: 99
-  },
-  {
-    id: "prod-43", name: "Article Sélection Luxe 43", price: 3000, shortDesc: "Produit de beauté haut de gamme.", description: "Description complète à venir.", images: ["/produits/43.jpeg"], img: "/produits/43.jpeg", category: "maquillage", stock: 99
-  },
+  // --- ZONE DE RÉSERVE (34 À 43) ---
+  { id: "prod-34", name: "Article Sélection Luxe 34", price: 3000, shortDesc: "Produit de beauté.", description: "A venir.", images: ["/produits/34.jpeg"], img: "/produits/34.jpeg", category: "maquillage", stock: 99 },
+  { id: "prod-35", name: "Article Sélection Luxe 35", price: 3000, shortDesc: "Produit de beauté.", description: "A venir.", images: ["/produits/35.jpeg"], img: "/produits/35.jpeg", category: "maquillage", stock: 99 },
+  { id: "prod-36", name: "Article Sélection Luxe 36", price: 3000, shortDesc: "Produit de beauté.", description: "A venir.", images: ["/produits/36.jpeg"], img: "/produits/36.jpeg", category: "maquillage", stock: 99 },
+  { id: "prod-37", name: "Article Sélection Luxe 37", price: 3000, shortDesc: "Produit de beauté.", description: "A venir.", images: ["/produits/37.jpeg"], img: "/produits/37.jpeg", category: "maquillage", stock: 99 },
+  { id: "prod-38", name: "Article Sélection Luxe 38", price: 3000, shortDesc: "Produit de beauté.", description: "A venir.", images: ["/produits/38.jpeg"], img: "/produits/38.jpeg", category: "maquillage", stock: 99 },
+  { id: "prod-39", name: "Article Sélection Luxe 39", price: 3000, shortDesc: "Produit de beauté.", description: "A venir.", images: ["/produits/39.jpeg"], img: "/produits/39.jpeg", category: "maquillage", stock: 99 },
+  { id: "prod-40", name: "Article Sélection Luxe 40", price: 3000, shortDesc: "Produit de beauté.", description: "A venir.", images: ["/produits/40.jpeg"], img: "/produits/40.jpeg", category: "maquillage", stock: 99 },
+  { id: "prod-41", name: "Article Sélection Luxe 41", price: 3000, shortDesc: "Produit de beauté.", description: "A venir.", images: ["/produits/41.jpeg"], img: "/produits/41.jpeg", category: "maquillage", stock: 99 },
+  { id: "prod-42", name: "Article Sélection Luxe 42", price: 3000, shortDesc: "Produit de beauté.", description: "A venir.", images: ["/produits/42.jpeg"], img: "/produits/42.jpeg", category: "maquillage", stock: 99 },
+  { id: "prod-43", name: "Article Sélection Luxe 43", price: 3000, shortDesc: "Produit de beauté.", description: "A venir.", images: ["/produits/43.jpeg"], img: "/produits/43.jpeg", category: "maquillage", stock: 99 },
 
   // --- ZONE IMAGE_896353.JPG (PRODUITS 44 À 46) ---
   {
@@ -430,7 +408,7 @@ const COEUR_ARTICLES = [
     price: 4500,
     shortDesc: "Brosse soufflante et coiffante rotative avec gant thermique.",
     description: "Brosse séchante, lissante et volumisante fushia et noire.",
-    images: ["/produits/45.jpeg", "/produits/45'.jpeg", "/produits/45''.jpeg"],
+    images: ["/produits/45.jpeg", "/produits/45'.jpeg", "/produits/45''.jpg"],
     img: "/produits/45.jpeg",
     category: "appareils",
     stock: 99
@@ -451,8 +429,6 @@ const COEUR_ARTICLES = [
 export async function GET() {
   try {
     let orders: any[] = [];
-
-    // Tente de récupérer les commandes réelles de la DB (Supabase/Postgres)
     try {
       const rawOrders = await prisma.order.findMany({ orderBy: { createdAt: 'desc' } });
       orders = rawOrders.map(o => ({
@@ -469,14 +445,10 @@ export async function GET() {
         status: o.status === "LIVREE" ? "livre" : "en_cours"
       }));
     } catch (dbError) {
-      console.error("Base de données injoignable, envoi d'une liste vide de commandes.", dbError);
+      console.error("Base de données injoignable pour le tableau admin", dbError);
     }
 
-    // Renvoie le catalogue figé invulnérable + les commandes
-    return NextResponse.json({ 
-      products: COEUR_ARTICLES, 
-      orders: orders 
-    });
+    return NextResponse.json({ products: COEUR_ARTICLES, orders });
   } catch (error: any) {
     return NextResponse.json({ products: COEUR_ARTICLES, orders: [] });
   }
@@ -487,15 +459,10 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { action, data } = body;
 
-    // Si clic de modification depuis l'admin panel, on bloque poliment pour rappeler l'architecture
     if (action === "SAVE_PRODUCT") {
-      return NextResponse.json({ 
-        success: true, 
-        message: "Mode hybride actif : Modifie directement le fichier route.ts pour mettre à jour tes 46 articles !" 
-      });
+      return NextResponse.json({ success: true, message: "Modifie le fichier local !" });
     }
 
-    // Gestion dynamique des commandes clients sur la DB
     if (action === "UPDATE_ORDER_STATUS") {
       const nextStatus = data.status === "livre" ? "LIVREE" : "EN_ATTENTE";
       await prisma.order.update({
@@ -510,7 +477,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true });
     }
 
-    return NextResponse.json({ error: "Action non prise en charge" }, { status: 400 });
+    return NextResponse.json({ error: "Action non gérée" }, { status: 400 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
