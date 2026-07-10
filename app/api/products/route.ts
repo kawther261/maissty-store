@@ -422,7 +422,20 @@ const COEUR_ARTICLES = [
   }
 ];
 
-export async function GET() {
-  // 👇 ICI LE SÉCURISATEUR : On encapsule les produits dans la clé attendue par le frontend
-  return NextResponse.json({ products: COEUR_ARTICLES });
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    // ✨ LE FIX DOUBLE SÉCURITÉ : Si un ID est demandé, on cherche et renvoie uniquement ce produit
+    if (id) {
+      const foundProduct = COEUR_ARTICLES.find((p) => p.id === id);
+      return NextResponse.json({ product: foundProduct || null });
+    }
+
+    // Sinon, on renvoie la liste complète pour la boutique principale
+    return NextResponse.json({ products: COEUR_ARTICLES });
+  } catch (error) {
+    return NextResponse.json({ products: COEUR_ARTICLES, product: null });
+  }
 }
