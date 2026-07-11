@@ -1,34 +1,39 @@
 import { NextResponse } from "next/server";
-import { supabase } from "../../lib/supabase"; // 🛠️ FIX : 2 points seulement car 'lib' est dans 'app' !
+import { supabase } from "../../lib/supabase"; // 🔌 Connexion 2 niveaux vers ton dossier app/lib
 
 export async function POST(request: Request) {
   try {
     const orderInfo = await request.json();
 
-    // 💾 1. SAUVEGARDE DANS TA TABLE SUPABASE
+    // 💾 1. SAUVEGARDE DIRECTE DANS TA TABLE SUPABASE
     try {
       const { error: dbError } = await supabase
         .from("orders")
         .insert([
           {
+            id: "ORD-" + Date.now().toString(), // 🔑 LE FIX CRUCIAL : On redonne l'ID requis par ta base !
             fullName: orderInfo.customerName || "Client",
             phone: orderInfo.phone || "",
             wilaya: orderInfo.wilaya || "",
-            address: `${orderInfo.commune} - ${orderInfo.address}`, 
+            address: `${orderInfo.commune || ""} - ${orderInfo.address || ""}`, 
             instructions: orderInfo.items || "", 
             total: Number(orderInfo.totalPrice) || 0,
             status: "en_cours"
           }
         ]);
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("❌ Erreur d'insertion Supabase :", dbError.message);
+        throw dbError;
+      }
       console.log("✅ Commande enregistrée avec succès sur Supabase !");
     } catch (dbError: any) {
-      console.error("❌ Erreur de sauvegarde Supabase:", dbError.message);
-      // On ne bloque pas la suite pour que tu reçoives quand même le message Telegram au cas où
+      console.error("❌ Crash critique lors de la sauvegarde Supabase:", dbError.message);
+      // On renvoie l'erreur au format JSON pour que le frontend puisse l'afficher au lieu de crash
+      return NextResponse.json({ success: false, error: dbError.message }, { status: 400 });
     }
 
-    // 📢 2. TRANSMISSION TELEGRAM
+    // 📢 2. TRANSMISSION TELEGRAM (Toujours 100% active)
     const botToken = "8640339011:AAFPTi3t_R-hl8mcjIao1qfbS8gCNLKcvPM"; 
     const chatId = "6188584965"; 
 
