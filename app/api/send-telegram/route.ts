@@ -1,34 +1,36 @@
 import { NextResponse } from "next/server";
-import { supabase } from "../../lib/supabase"; // 🔌 Connexion directe et sécurisée à Supabase
+import { supabase } from "../../lib/supabase"; 
 
 export async function POST(request: Request) {
   try {
     const orderInfo = await request.json();
 
-    // 💾 1. SAUVEGARDE DIRECTE DANS TA TABLE SUPABASE
-    try {
-      const { error: dbError } = await supabase
-        .from("orders")
-        .insert([
-          {
-            fullName: orderInfo.customerName || "Client",
-            phone: orderInfo.phone || "",
-            wilaya: orderInfo.wilaya || "",
-            address: `${orderInfo.commune} - ${orderInfo.address}`, 
-            instructions: orderInfo.items || "", 
-            total: Number(orderInfo.totalPrice) || 0,
-            status: "en_cours" // Aligné avec ton nouveau système admin
-          }
-        ]);
+    // 💾 1. SAUVEGARDE DANS LA BASE DE DONNÉES
+    const { error: dbError } = await supabase
+      .from("orders")
+      .insert([
+        {
+          fullName: orderInfo.customerName || "Client",
+          phone: orderInfo.phone || "",
+          wilaya: orderInfo.wilaya || "",
+          address: `${orderInfo.commune} - ${orderInfo.address}`, 
+          instructions: orderInfo.items || "", 
+          total: Number(orderInfo.totalPrice) || 0,
+          status: "en_cours"
+        }
+      ]);
 
-      if (dbError) throw dbError;
-      console.log("✅ Commande enregistrée avec succès sur Supabase !");
-    } catch (dbError: any) {
-      console.error("❌ Erreur de sauvegarde Supabase:", dbError.message);
-      // On laisse tourner la suite pour que tu reçoives quand même le Telegram si la DB a un problème
+    // 🔴 SI SUPABASE RÂLE, ON RENVOIE L'ERREUR TOUT DE SUITE POUR LA LIRE
+    if (dbError) {
+      return NextResponse.json({ 
+        success: false, 
+        message: "Supabase a bloqué la commande !", 
+        details: dbError.message,
+        hint: dbError.hint 
+      }, { status: 400 });
     }
 
-    // 📢 2. TRANSMISSION TELEGRAM (Toujours 100% fonctionnelle)
+    // 📢 2. TRANSMISSION TELEGRAM
     const botToken = "8640339011:AAFPTi3t_R-hl8mcjIao1qfbS8gCNLKcvPM"; 
     const chatId = "6188584965"; 
 
