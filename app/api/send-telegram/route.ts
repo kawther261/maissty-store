@@ -1,33 +1,31 @@
 import { NextResponse } from "next/server";
-import { supabase } from "../../lib/supabase"; 
+import { supabase } from "../../lib/supabase"; // 🛠️ FIX : 2 points seulement car 'lib' est dans 'app' !
 
 export async function POST(request: Request) {
   try {
     const orderInfo = await request.json();
 
-    // 💾 1. SAUVEGARDE DANS LA BASE DE DONNÉES
-    const { error: dbError } = await supabase
-      .from("orders")
-      .insert([
-        {
-          fullName: orderInfo.customerName || "Client",
-          phone: orderInfo.phone || "",
-          wilaya: orderInfo.wilaya || "",
-          address: `${orderInfo.commune} - ${orderInfo.address}`, 
-          instructions: orderInfo.items || "", 
-          total: Number(orderInfo.totalPrice) || 0,
-          status: "en_cours"
-        }
-      ]);
+    // 💾 1. SAUVEGARDE DANS TA TABLE SUPABASE
+    try {
+      const { error: dbError } = await supabase
+        .from("orders")
+        .insert([
+          {
+            fullName: orderInfo.customerName || "Client",
+            phone: orderInfo.phone || "",
+            wilaya: orderInfo.wilaya || "",
+            address: `${orderInfo.commune} - ${orderInfo.address}`, 
+            instructions: orderInfo.items || "", 
+            total: Number(orderInfo.totalPrice) || 0,
+            status: "en_cours"
+          }
+        ]);
 
-    // 🔴 SI SUPABASE RÂLE, ON RENVOIE L'ERREUR TOUT DE SUITE POUR LA LIRE
-    if (dbError) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Supabase a bloqué la commande !", 
-        details: dbError.message,
-        hint: dbError.hint 
-      }, { status: 400 });
+      if (dbError) throw dbError;
+      console.log("✅ Commande enregistrée avec succès sur Supabase !");
+    } catch (dbError: any) {
+      console.error("❌ Erreur de sauvegarde Supabase:", dbError.message);
+      // On ne bloque pas la suite pour que tu reçoives quand même le message Telegram au cas où
     }
 
     // 📢 2. TRANSMISSION TELEGRAM
