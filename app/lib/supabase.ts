@@ -1,16 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
-// On récupère les variables (et on accepte les deux variantes de noms pour éviter les fautes de frappe)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+// 🔌 Variables avec clés directes de secours (Bypasse les bugs de variables Vercel)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://gzrqogsktjgzasplslfp.supabase.co";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_PoYmlnas7nNjpY9HLluWKQ_zVseiP4i";
 
-// 💡 FIX DE GÉNIE : Si Next.js compile à blanc sur Vercel sans les variables, 
-// on utilise un placeholder temporaire pour ne PAS faire planter le build.
-const finalUrl = supabaseUrl || 'https://placeholder-project.supabase.co';
-const finalKey = supabaseKey || 'placeholder-temporary-anon-key';
-
-if (!supabaseUrl || !supabaseKey) {
-  console.warn("⚠️ Attention : Les variables Supabase sont introuvables en mode compilation locale.");
-}
-
-export const supabase = createClient(finalUrl, finalKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
