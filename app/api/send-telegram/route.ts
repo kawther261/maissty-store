@@ -1,39 +1,33 @@
 import { NextResponse } from "next/server";
-import { supabase } from "../../lib/supabase"; // 🔌 Connexion 2 niveaux vers ton dossier app/lib
+import { supabase } from "../../lib/supabase"; 
 
 export async function POST(request: Request) {
   try {
     const orderInfo = await request.json();
 
-    // 💾 1. SAUVEGARDE DIRECTE DANS TA TABLE SUPABASE
-    try {
-      const { error: dbError } = await supabase
-        .from("orders")
-        .insert([
-          {
-            id: "ORD-" + Date.now().toString(), // 🔑 LE FIX CRUCIAL : On redonne l'ID requis par ta base !
-            fullName: orderInfo.customerName || "Client",
-            phone: orderInfo.phone || "",
-            wilaya: orderInfo.wilaya || "",
-            address: `${orderInfo.commune || ""} - ${orderInfo.address || ""}`, 
-            instructions: orderInfo.items || "", 
-            total: Number(orderInfo.totalPrice) || 0,
-            status: "en_cours"
-          }
-        ]);
+    // 💾 1. SAUVEGARDE DIRECTE SUPABASE (Ton code exact qui fonctionne)
+    const { error: dbError } = await supabase
+      .from("orders")
+      .insert([
+        {
+          fullName: orderInfo.customerName || "Client",
+          phone: orderInfo.phone || "",
+          wilaya: orderInfo.wilaya || "",
+          address: `${orderInfo.commune} - ${orderInfo.address}`, 
+          instructions: orderInfo.items || "", 
+          total: Number(orderInfo.totalPrice) || 0,
+          status: "en_cours"
+        }
+      ]);
 
-      if (dbError) {
-        console.error("❌ Erreur d'insertion Supabase :", dbError.message);
-        throw dbError;
-      }
-      console.log("✅ Commande enregistrée avec succès sur Supabase !");
-    } catch (dbError: any) {
-      console.error("❌ Crash critique lors de la sauvegarde Supabase:", dbError.message);
-      // On renvoie l'erreur au format JSON pour que le frontend puisse l'afficher au lieu de crash
-      return NextResponse.json({ success: false, error: dbError.message }, { status: 400 });
+    if (dbError) {
+      console.error("❌ Erreur Supabase:", dbError.message);
+      return NextResponse.json({ error: dbError.message }, { status: 400 });
     }
 
-    // 📢 2. TRANSMISSION TELEGRAM (Toujours 100% active)
+    // 📢 2. TRANSMISSION TELEGRAM (En dur comme avant)
+    // ⚠️ ATTENTION : Comme ce token précis a été révoqué par Telegram, 
+    // génère juste un nouveau token rapide sur @BotFather et remplace-le entre les guillemets ci-dessous.
     const botToken = "8640339011:AAFPTi3t_R-hl8mcjIao1qfbS8gCNLKcvPM"; 
     const chatId = "6188584965"; 
 
