@@ -266,6 +266,16 @@ const COEUR_ARTICLES = [
     stock: 99
   },
   {
+    id: "prod-38",
+    name: "Louis Vuitton capucine",
+    price: 11000,
+    category: "sacs",
+    img: "/produits/37.jpg",
+    images: ["/produits/37.jpg"],
+    description: "Une icône de luxe audacieuse au format miniature, parfaite pour sublimer vos tenues",
+    stock: 99
+  },
+  {
     id: "prod-27",
     name: "Blush Make Me Blush YSL – Teinte 44",
     price: 3400,
@@ -303,6 +313,16 @@ const COEUR_ARTICLES = [
     img: "/produits/30.jpeg",
     images: ["/produits/30.jpeg", "/produits/30'.jpeg"],
     description: "La palette illuminatrice culte de Dior avec ses 4 teintes universelles (blanc, doré, rose, bronze) pour sculpter le visage d'un éclat sur mesure, du plus naturel au plus intense.",
+    stock: 99
+  },
+  {
+    id: "prod-37",
+    name: "Palette Visage Beauty Soulmates – Charlotte Tilbury",
+    price: 3900,
+    category: "maquillage",
+    img: "/produits/37.jpeg",
+    images: ["/produits/31.jpeg", "/produits/31'.jpeg"],
+    description: "n sublime duo en édition limitée contenant une poudre lissante Airbrush et un blush lumineux",
     stock: 99
   },
   {
