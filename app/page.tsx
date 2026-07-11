@@ -1,32 +1,36 @@
-export const dynamic = 'force-dynamic';
+"use client";
 
+import { useState, useEffect } from "react";
 import { Hero } from "../components/Hero";
 import { ProductCard } from "../components/ProductCard";
 import { Testimonials } from "../components/Testimonials";
 import Link from "next/link";
 import Image from "next/image";
 
-// 🔌 Connexion directe à Prisma intégrée (Plus besoin d'import externe !)
-import { PrismaClient } from '@prisma/client';
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+export default function Home() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default async function Home() {
-  let products: any[] = [];
-
-  try {
-    // 🔄 On récupère les vrais produits directement depuis ton compte Neon en ligne
-    products = await prisma.product.findMany({
-      orderBy: {
-        id: 'desc'
+  // 🔄 Chargement sécurisé depuis notre API locale de 36 articles
+  useEffect(() => {
+    const loadHomeProducts = async () => {
+      try {
+        const res = await fetch("/api/products");
+        const data = await res.json();
+        if (data.products) {
+          setProducts(data.products);
+        }
+      } catch (err) {
+        console.error("Erreur lors du chargement des nouveautés :", err);
+      } finally {
+        setLoading(false);
       }
-    });
-  } catch (error) {
-    console.error("Erreur lors de la récupération des produits Neon:", error);
-  }
+    };
 
-  // Sélectionner les 4 derniers produits ajoutés pour la section Nouveautés
+    loadHomeProducts();
+  }, []);
+
+  // Sélectionner automatiquement les 4 premiers articles pour la section Nouveautés
   const latestProducts = products.slice(0, 4);
 
   return (
@@ -75,7 +79,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Section Nouveautés Dynamiques Connectée à Neon */}
+      {/* Section Nouveautés Sécurisée */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-12">
         <div className="text-center mb-10">
           <h2 className="text-sm tracking-[0.3em] text-[#2C1810] font-playfair font-bold uppercase">
@@ -84,9 +88,13 @@ export default async function Home() {
           <div className="w-12 h-[1px] bg-[#C9A96E] mx-auto mt-3" />
         </div>
 
-        {latestProducts.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-8 text-xs text-[#8B6860]">
+            Chargement des dernières collections...
+          </div>
+        ) : latestProducts.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-xs text-[#8B6860]">Aucun produit en ligne pour le moment. Connectez-vous sur votre tableau de bord admin pour ajouter des articles.</p>
+            <p className="text-xs text-[#8B6860]">Aucun produit disponible pour le moment.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
@@ -94,7 +102,6 @@ export default async function Home() {
               const targetImg = 
                 (prod.images && prod.images.length > 0 ? prod.images[0] : null) || 
                 prod.img || 
-                prod.image || 
                 "/placeholder.jpg";
 
               return (
