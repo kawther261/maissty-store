@@ -390,116 +390,78 @@ const COEUR_ARTICLES = [
 ];
 
 // ==========================================
-// 🔄 METHODE GET : Charger les produits et commandes pour l'admin
+// 🔄 METHODE GET : Lecture Supabase + Repli Local Fixé
 // ==========================================
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    // 1️⃣ Récupérer les produits depuis Supabase
-    const { data: dbProducts, error: prodError } = await supabase
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (id) {
+      const { data: dbProduct, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (!error && dbProduct) {
+        return NextResponse.json({ product: dbProduct });
+      }
+
+      const foundProduct = COEUR_ARTICLES.find((p) => p.id === id);
+      return NextResponse.json({ product: foundProduct || null });
+    }
+
+    const { data: dbProducts, error } = await supabase
       .from("products")
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (prodError) console.error("⚠️ Erreur Prod Supabase:", prodError.message);
+    if (!error && dbProducts && dbProducts.length > 0) {
+      return NextResponse.json({ products: dbProducts });
+    }
 
-    const products = (dbProducts && dbProducts.length > 0) 
-      ? dbProducts.map(p => ({
-          ...p,
-          category: p.category || "parfums",
-          img: p.images && p.images.length > 0 ? p.images[0] : p.img || "/placeholder.jpg"
-        }))
-      : COEUR_ARTICLES;
-
-    // 2️⃣ Récupérer les commandes depuis Supabase
-    const { data: dbOrders, error: orderError } = await supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (orderError) throw orderError;
+    return NextResponse.json({ products: COEUR_ARTICLES });
+  } catch (error) {
+    // 🛠️ SÉCURITÉ PARFAITE : Si un ID provoque un crash SQL, on cherche quand même l'article en local !
+    const { searchParams } = new URL(req.url);
+    const id = searchParams?.get("id");
     
-    const orders = (dbOrders || []).map(o => ({
-      id: o.id,
-      firstName: o.fullName,
-      lastName: "",
-      phone: o.phone,
-      wilaya: o.wilaya,
-      commune: "Disponible",
-      address: o.address,
-      deliveryType: "domicile",
-      itemsSummary: o.instructions || "Articles",
-      total: o.total,
-      status: o.status === "livre" ? "livre" : "en_cours"
-    }));
-
-    return NextResponse.json({ products, orders });
-  } catch (error: any) {
-    console.error("❌ Gros crash dans l'API Admin GET:", error.message);
-    return NextResponse.json({ products: COEUR_ARTICLES, orders: [], error: error.message });
+    if (id) {
+      const foundProduct = COEUR_ARTICLES.find((p) => p.id === id);
+      return NextResponse.json({ product: foundProduct || null });
+    }
+    return NextResponse.json({ products: COEUR_ARTICLES });
   }
 }
 
 // ==========================================
-// 🛠️ METHODE POST : Actions d'Édition / Suppression Admin
+// ➕ METHODE POST : Ajouter un produit sur Supabase
 // ==========================================
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { action, data } = body;
+    const { name, price, category, img, images, description, stock } = body;
 
-    if (action === "SAVE_PRODUCT") {
-      const catName = (data.category || "parfums").trim().toLowerCase();
-      const productPayload = {
-        name: data.name,
-        price: Number(data.price),
-        shortDesc: data.shortDesc || "",
-        description: data.shortDesc || "",
-        images: data.images || [],
-        img: data.images && data.images.length > 0 ? data.images[0] : "/placeholder.jpg",
-        category: catName,
-        stock: 99
-      };
+    const { data, error } = await supabase
+      .from("products")
+      .insert([
+        {
+          name,
+          price: Number(price),
+          category,
+          img,
+          images: images || [img],
+          description,
+          stock: Number(stock || 99)
+        }
+      ])
+      .select();
 
-      if (data.editingId) {
-        const { data: updated, error } = await supabase
-          .from("products")
-          .update(productPayload)
-          .eq("id", data.editingId)
-          .select();
+    if (error) throw error;
 
-        if (error) throw error;
-        return NextResponse.json({ success: true, product: updated[0] });
-      } else {
-        const { data: created, error } = await supabase
-          .from("products")
-          .insert([productPayload])
-          .select();
-
-        if (error) throw error;
-        return NextResponse.json({ success: true, product: created[0] });
-      }
-    }
-
-    if (action === "DELETE_PRODUCT") {
-      const { error } = await supabase.from("products").delete().eq("id", data.id);
-      if (error) throw error;
-      return NextResponse.json({ success: true });
-    }
-
-    if (action === "UPDATE_ORDER_STATUS") {
-      const { error } = await supabase.from("orders").update({ status: data.status }).eq("id", data.id);
-      if (error) throw error;
-      return NextResponse.json({ success: true });
-    }
-
-    if (action === "DELETE_ORDER") {
-      const { error } = await supabase.from("orders").delete().eq("id", data.id);
-      if (error) throw error;
-      return NextResponse.json({ success: true });
-    }
-
-    return NextResponse.json({ error: "Action inconnue" }, { status: 400 });
+    return NextResponse.json({ success: true, product: data[0] });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
