@@ -3,11 +3,7 @@ import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// ==========================================
-// 📦 CATALOGUE DE PRODUCTION (46 ARTICLES)
-// ==========================================
 const COEUR_ARTICLES = [
-  // 💄 --- CATEGORIE : MAQUILLAGE ---
   {
     id: "prod-1",
     name: "Blush Poudre Dior Backstage Rosy Glow",
@@ -64,6 +60,72 @@ const COEUR_ARTICLES = [
     stock: 99
   },
   {
+    id: "prod-6",
+    name: "Coffret Miniatures Parfums Hermès",
+    price: 7500,
+    category: "parfums",
+    img: "/produits/6.jpeg",
+    images: ["/produits/6.jpeg", "/produits/6'.jpeg"],
+    shortDesc: "Set de collection de fragrances de luxe Hermès.",
+    description: "Set de collection de fragrances de luxe Hermès.",
+    stock: 99
+  },
+  {
+    id: "prod-7",
+    name: "Pochette Maquillage Dior Floral Brodée",
+    price: 6000,
+    category: "sacs",
+    img: "/produits/7.jpeg",
+    images: ["/produits/7.jpeg", "/produits/7'.jpeg"],
+    shortDesc: "Trousse de beauté luxe en édition limitée broderie fleurs.",
+    description: "Trousse de beauté luxe en édition limitée broderie fleurs.",
+    stock: 99
+  },
+  {
+    id: "prod-8",
+    name: "Sac Pouch Rond Tissu Quilté Dior",
+    price: 6500,
+    category: "sacs",
+    img: "/produits/8.jpeg",
+    images: ["/produits/8.jpeg", "/produits/8'.jpeg"],
+    shortDesc: "Mini sac pochette rond avec détails de couture.",
+    description: "Mini sac pochette rond avec détails de couture.",
+    stock: 99
+  },
+  {
+    id: "prod-9",
+    name: "Kayali Miniature Fragrance Discovery Set",
+    price: 8500,
+    category: "parfums",
+    img: "/produits/9.jpeg",
+    images: ["/produits/9.jpeg", "/produits/9'.jpeg"],
+    shortDesc: "Coffret de 4 parfums d'ambiance et de sillage Kayali.",
+    description: "Coffret de 4 parfums d'ambiance et de sillage Kayali.",
+    stock: 99
+  },
+  {
+    id: "prod-10",
+    name: "Dior Skincare & Glow Trio Set",
+    price: 5200,
+    category: "parfums",
+    img: "/produits/10.jpeg",
+    images: ["/produits/10.jpeg", "/produits/10'.jpeg"],
+    shortDesc: "Kit de routine éclat et miniatures soins Dior.",
+    description: "Kit de routine éclat et miniatures soins Dior.",
+    stock: 99
+  },
+  {
+    id: "prod-11",
+    name: "Accessoire Luxe Dior Emballé Ruban",
+    price: 2900,
+    category: "sacs",
+    img: "/produits/11.jpeg",
+    images: ["/produits/11.jpeg"],
+    shortDesc: "Édition limitée sous emballage cadeau officiel.",
+    description: "Édition limitée sous emballage cadeau officiel.",
+    stock: 99
+  },
+  {
     id: "prod-12",
     name: "Huda Beauty Easy Bake Loose Powder",
     price: 4100,
@@ -75,6 +137,72 @@ const COEUR_ARTICLES = [
     stock: 99
   },
   {
+    id: "prod-13",
+    name: "Sac Seau Quilté Monogramme CD Gold",
+    price: 12000,
+    category: "sacs",
+    img: "/produits/13.jpeg",
+    images: ["/produits/13.jpeg", "/produits/13'.jpeg"],
+    shortDesc: "Sac à main style seau haut de gamme avec chaîne dorée.",
+    description: "Sac à main style seau haut de gamme avec chaîne dorée.",
+    stock: 99
+  },
+  {
+    id: "prod-14",
+    name: "Porte-cartes Enveloppe Cuir Rose Luxury",
+    price: 4500,
+    category: "sacs",
+    img: "/produits/14.jpeg",
+    images: ["/produits/14.jpeg"],
+    shortDesc: "Petit portefeuille compact de luxe couleur pastel.",
+    description: "Petit portefeuille compact de luxe couleur pastel.",
+    stock: 99
+  },
+  {
+    id: "prod-15",
+    name: "Pochette Cuir Noir Monogramme Prestige",
+    price: 5800,
+    category: "sacs",
+    img: "/produits/15.jpeg",
+    images: ["/produits/15.jpeg"],
+    shortDesc: "Pochette de rangement ou soirée en cuir embossé noir.",
+    description: "Pochette de rangement ou soirée en cuir embossé noir.",
+    stock: 99
+  },
+  {
+    id: "prod-16",
+    name: "Portefeuille Long Blanc Multicolore Style LV",
+    price: 6200,
+    category: "sacs",
+    img: "/produits/16.jpeg",
+    images: ["/produits/16.jpeg"],
+    shortDesc: "Compagnon zippé en toile monogramme colorée.",
+    description: "Compagnon zippé en toile monogramme colorée.",
+    stock: 99
+  },
+  {
+    id: "prod-17",
+    name: "Sac à Main Top-Handle Monogramme Blanc & Rose",
+    price: 14500,
+    category: "sacs",
+    img: "/produits/17.jpeg",
+    images: ["/produits/17.jpeg", "/produits/17'.jpeg", "/produits/17''.jpeg"],
+    shortDesc: "Sac rigide de luxe style Alma avec bandoulière.",
+    description: "Sac à main rigide de luxe avec finitions blush.",
+    stock: 99
+  },
+  {
+    id: "prod-18",
+    name: "Coffret Miniature Parfums de Prestige Collection",
+    price: 8900,
+    category: "parfums",
+    img: "/produits/18.jpeg",
+    images: ["/produits/18.jpeg", "/produits/18'.jpeg"],
+    shortDesc: "Set de 4 flacons de collection haute parfumerie.",
+    description: "Set de 4 flacons de collection haute parfumerie.",
+    stock: 99
+  },
+  {
     id: "prod-19",
     name: "YSL Luxury Cheek & Blush Face Palette",
     price: 5400,
@@ -83,6 +211,28 @@ const COEUR_ARTICLES = [
     images: ["/produits/19.jpeg", "/produits/19'.jpeg", "/produits/19''.jpeg"],
     shortDesc: "Palette de fards à joues boîtier cuir chevron matelassé rose.",
     description: "Palette multi-teintes fards à joues haut de gamme YSL.",
+    stock: 99
+  },
+  {
+    id: "prod-20",
+    name: "Sol de Janeiro Hair & Body Mist Discovery Set",
+    price: 4900,
+    category: "parfums",
+    img: "/produits/20.jpeg",
+    images: ["/produits/20.jpeg", "/produits/20''.jpeg"],
+    shortDesc: "Coffret de brumes parfumées iconiques brésiliennes.",
+    description: "Coffret de brumes parfumées iconiques brésiliennes.",
+    stock: 99
+  },
+  {
+    id: "prod-21",
+    name: "Dior Skincare Capture Totale / Mist Set",
+    price: 5600,
+    category: "parfums",
+    img: "/produits/21.jpeg",
+    images: ["/produits/21.jpeg", "/produits/21'.jpeg"],
+    shortDesc: "Duo soin de peau éclat et brume fraîcheur.",
+    description: "Duo soin de peau éclat et brume fraîcheur.",
     stock: 99
   },
   {
@@ -217,162 +367,114 @@ const COEUR_ARTICLES = [
     description: "Duo enlumineur et blush en forme de cœur romantique.",
     stock: 99
   },
-
-  // 👜 --- CATEGORIE : SACS & ACCESSOIRES ---
   {
-    id: "prod-7",
-    name: "Pochette Maquillage Dior Floral Brodée",
-    price: 6000,
-    category: "accessoires",
-    img: "/produits/7.jpeg",
-    images: ["/produits/7.jpeg", "/produits/7'.jpeg"],
-    shortDesc: "Trousse de beauté luxe en édition limitée broderie fleurs.",
-    description: "Trousse de beauté luxe en édition limitée broderie fleurs.",
+    id: "prod-34",
+    name: "Article Sélection Luxe 34",
+    price: 3000,
+    category: "maquillage",
+    img: "/produits/34.jpeg",
+    images: ["/produits/34.jpeg"],
+    shortDesc: "Produit de beauté haut de gamme.",
+    description: "Description complète du produit numéro 34.",
     stock: 99
   },
   {
-    id: "prod-8",
-    name: "Sac Pouch Rond Tissu Quilté Dior",
-    price: 6500,
-    category: "accessoires",
-    img: "/produits/8.jpeg",
-    images: ["/produits/8.jpeg", "/produits/8'.jpeg"],
-    shortDesc: "Mini sac pochette rond avec détails de couture.",
-    description: "Mini sac pochette rond avec détails de couture.",
+    id: "prod-35",
+    name: "Article Sélection Luxe 35",
+    price: 3000,
+    category: "sacs",
+    img: "/produits/35.jpeg",
+    images: ["/produits/35.jpeg"],
+    shortDesc: "Accessoire de maroquinerie haut de gamme.",
+    description: "Description complète du produit numéro 35.",
     stock: 99
   },
   {
-    id: "prod-11",
-    name: "Accessoire Luxe Dior Emballé Ruban",
-    price: 2900,
-    category: "accessoires",
-    img: "/produits/11.jpeg",
-    images: ["/produits/11.jpeg"],
-    shortDesc: "Édition limitée sous emballage cadeau officiel.",
-    description: "Édition limitée sous emballage cadeau officiel.",
-    stock: 99
-  },
-  {
-    id: "prod-13",
-    name: "Sac Seau Quilté Monogramme CD Gold",
-    price: 12000,
-    category: "accessoires",
-    img: "/produits/13.jpeg",
-    images: ["/produits/13.jpeg", "/produits/13'.jpeg"],
-    shortDesc: "Sac à main style seau haut de gamme avec chaîne dorée.",
-    description: "Sac à main style seau haut de gamme avec chaîne dorée.",
-    stock: 99
-  },
-  {
-    id: "prod-14",
-    name: "Porte-cartes Enveloppe Cuir Rose Luxury",
-    price: 4500,
-    category: "accessoires",
-    img: "/produits/14.jpeg",
-    images: ["/produits/14.jpeg"],
-    shortDesc: "Petit portefeuille compact de luxe couleur pastel.",
-    description: "Petit portefeuille compact de luxe couleur pastel.",
-    stock: 99
-  },
-  {
-    id: "prod-15",
-    name: "Pochette Cuir Noir Monogramme Prestige",
-    price: 5800,
-    category: "accessoires",
-    img: "/produits/15.jpeg",
-    images: ["/produits/15.jpeg"],
-    shortDesc: "Pochette de rangement ou soirée en cuir embossé noir.",
-    description: "Pochette de rangement ou soirée en cuir embossé noir.",
-    stock: 99
-  },
-  {
-    id: "prod-16",
-    name: "Portefeuille Long Blanc Multicolore Style LV",
-    price: 6200,
-    category: "accessoires",
-    img: "/produits/16.jpeg",
-    images: ["/produits/16.jpeg"],
-    shortDesc: "Compagnon zippé en toile monogramme colorée.",
-    description: "Compagnon zippé en toile monogramme colorée.",
-    stock: 99
-  },
-  {
-    id: "prod-17",
-    name: "Sac à Main Top-Handle Monogramme Blanc & Rose",
-    price: 14500,
-    category: "accessoires",
-    img: "/produits/17.jpeg",
-    images: ["/produits/17.jpeg", "/produits/17'.jpeg", "/produits/17''.jpeg"],
-    shortDesc: "Sac rigide de luxe style Alma avec bandoulière.",
-    description: "Sac à main rigide de luxe avec finitions blush.",
-    stock: 99
-  },
-
-  // 🧪 --- CATEGORIE : PARFUMS & SOINS ---
-  {
-    id: "prod-6",
-    name: "Coffret Miniatures Parfums Hermès",
-    price: 7500,
+    id: "prod-36",
+    name: "Article Sélection Luxe 36",
+    price: 3000,
     category: "parfums",
-    img: "/produits/6.jpeg",
-    images: ["/produits/6.jpeg", "/produits/6'.jpeg"],
-    shortDesc: "Set de collection de fragrances de luxe Hermès.",
-    description: "Set de collection de fragrances de luxe Hermès.",
+    img: "/produits/36.jpeg",
+    images: ["/produits/36.jpeg"],
+    shortDesc: "Fragrance d'exception haute parfumerie.",
+    description: "Description complète du produit numéro 36.",
     stock: 99
   },
   {
-    id: "prod-9",
-    name: "Kayali Miniature Fragrance Discovery Set",
-    price: 8500,
+    id: "prod-37",
+    name: "Article Sélection Luxe 37",
+    price: 3000,
+    category: "maquillage",
+    img: "/produits/37.jpeg",
+    images: ["/produits/37.jpeg"],
+    shortDesc: "Produit de beauté haut de gamme.",
+    description: "Description complète du produit numéro 37.",
+    stock: 99
+  },
+  {
+    id: "prod-38",
+    name: "Article Sélection Luxe 38",
+    price: 3000,
+    category: "sacs",
+    img: "/produits/38.jpeg",
+    images: ["/produits/38.jpeg"],
+    shortDesc: "Accessoire de maroquinerie haut de gamme.",
+    description: "Description complète du produit numéro 38.",
+    stock: 99
+  },
+  {
+    id: "prod-39",
+    name: "Article Sélection Luxe 39",
+    price: 3000,
     category: "parfums",
-    img: "/produits/9.jpeg",
-    images: ["/produits/9.jpeg", "/produits/9'.jpeg"],
-    shortDesc: "Coffret de 4 parfums d'ambiance et de sillage Kayali.",
-    description: "Coffret de 4 parfums d'ambiance et de sillage Kayali.",
+    img: "/produits/39.jpeg",
+    images: ["/produits/39.jpeg"],
+    shortDesc: "Fragrance d'exception haute parfumerie.",
+    description: "Description complète du produit numéro 39.",
     stock: 99
   },
   {
-    id: "prod-10",
-    name: "Dior Skincare & Glow Trio Set",
-    price: 5200,
-    category: "soins",
-    img: "/produits/10.jpeg",
-    images: ["/produits/10.jpeg", "/produits/10'.jpeg"],
-    shortDesc: "Kit de routine éclat et miniatures soins Dior.",
-    description: "Kit de routine éclat et miniatures soins Dior.",
+    id: "prod-40",
+    name: "Article Sélection Luxe 40",
+    price: 3000,
+    category: "maquillage",
+    img: "/produits/40.jpeg",
+    images: ["/produits/40.jpeg"],
+    shortDesc: "Produit de beauté haut de gamme.",
+    description: "Description complète du produit numéro 40.",
     stock: 99
   },
   {
-    id: "prod-18",
-    name: "Coffret Miniature Parfums de Prestige Collection",
-    price: 8900,
+    id: "prod-41",
+    name: "Article Sélection Luxe 41",
+    price: 3000,
+    category: "sacs",
+    img: "/produits/41.jpeg",
+    images: ["/produits/41.jpeg"],
+    shortDesc: "Accessoire de maroquinerie haut de gamme.",
+    description: "Description complète du produit numéro 41.",
+    stock: 99
+  },
+  {
+    id: "prod-42",
+    name: "Article Sélection Luxe 42",
+    price: 3000,
     category: "parfums",
-    img: "/produits/18.jpeg",
-    images: ["/produits/18.jpeg", "/produits/18'.jpeg"],
-    shortDesc: "Set de 4 flacons de collection haute parfumerie.",
-    description: "Set de 4 flacons de collection haute parfumerie.",
+    img: "/produits/42.jpeg",
+    images: ["/produits/42.jpeg"],
+    shortDesc: "Fragrance d'exception haute parfumerie.",
+    description: "Description complète du produit numéro 42.",
     stock: 99
   },
   {
-    id: "prod-20",
-    name: "Sol de Janeiro Hair & Body Mist Discovery Set",
-    price: 4900,
-    category: "parfums",
-    img: "/produits/20.jpeg",
-    images: ["/produits/20.jpeg", "/produits/20''.jpeg"],
-    shortDesc: "Coffret de brumes parfumées iconiques brésiliennes.",
-    description: "Coffret de brumes parfumées iconiques brésiliennes.",
-    stock: 99
-  },
-  {
-    id: "prod-21",
-    name: "Dior Skincare Capture Totale / Mist Set",
-    price: 5600,
-    category: "soins",
-    img: "/produits/21.jpeg",
-    images: ["/produits/21.jpeg", "/produits/21'.jpeg"],
-    shortDesc: "Duo soin de peau éclat et brume fraîcheur.",
-    description: "Duo soin de peau éclat et brume fraîcheur.",
+    id: "prod-43",
+    name: "Article Sélection Luxe 43",
+    price: 3000,
+    category: "maquillage",
+    img: "/produits/43.jpeg",
+    images: ["/produits/43.jpeg"],
+    shortDesc: "Produit de beauté haut de gamme.",
+    description: "Description complète du produit numéro 43.",
     stock: 99
   },
   {
@@ -386,13 +488,11 @@ const COEUR_ARTICLES = [
     description: "Coffret d'exception contenant 4 flacons signatures Tom Ford.",
     stock: 99
   },
-
-  // ⚡ --- CATEGORIE : APPAREILS APPAREILS ---
   {
     id: "prod-45",
     name: "One Step Hair Dryer & Volumizer Styler (Pink)",
     price: 4500,
-    category: "appareils",
+    category: "maquillage",
     img: "/produits/45.jpeg",
     images: ["/produits/45.jpeg", "/produits/45'.jpeg", "/produits/45''.jpg"],
     shortDesc: "Brosse soufflante et coiffante rotative avec gant thermique.",
@@ -403,7 +503,7 @@ const COEUR_ARTICLES = [
     id: "prod-46",
     name: "One Step Pro Air Styler Brush (Green Premium)",
     price: 4900,
-    category: "appareils",
+    category: "maquillage",
     img: "/produits/46.jpeg",
     images: ["/produits/46.jpeg", "/produits/46'.jpg"],
     shortDesc: "Brosse chauffante lissante professionnelle couleur vert émeraude.",
@@ -412,21 +512,16 @@ const COEUR_ARTICLES = [
   }
 ];
 
-// ==========================================
-// 🚀 GESTIONNAIRE DE REQUÊTES API (GET)
-// ==========================================
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
-    // Filtrage par ID unique pour les fiches produits individuelles
     if (id) {
       const foundProduct = COEUR_ARTICLES.find((p) => p.id === id);
       return NextResponse.json({ product: foundProduct || null });
     }
 
-    // Renvoi du catalogue ordonné global
     return NextResponse.json({ products: COEUR_ARTICLES });
   } catch (error) {
     return NextResponse.json({ products: COEUR_ARTICLES, product: null });
