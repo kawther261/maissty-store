@@ -1,34 +1,34 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from '@prisma/client';
-
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+import { supabase } from "../../lib/supabase"; // 🔌 Connexion directe et sécurisée à Supabase
 
 export async function POST(request: Request) {
   try {
     const orderInfo = await request.json();
 
-    // 💾 1. SAUVEGARDE DIRECTE DANS NEON CLOUD
+    // 💾 1. SAUVEGARDE DIRECTE DANS TA TABLE SUPABASE
     try {
-      await prisma.order.create({
-        data: {
-          id: "ORD-" + Date.now().toString(),
-          fullName: orderInfo.customerName || "Client",
-          phone: orderInfo.phone || "",
-          wilaya: orderInfo.wilaya || "",
-          address: `${orderInfo.commune} - ${orderInfo.address}`, 
-          instructions: orderInfo.items || "", 
-          total: Number(orderInfo.totalPrice) || 0,
-          status: "EN_ATTENTE" as any 
-        }
-      });
-      console.log("✅ Commande enregistrée avec succès sur Neon Cloud !");
-    } catch (dbError) {
-      console.error("❌ Erreur de sauvegarde Neon:", dbError);
+      const { error: dbError } = await supabase
+        .from("orders")
+        .insert([
+          {
+            fullName: orderInfo.customerName || "Client",
+            phone: orderInfo.phone || "",
+            wilaya: orderInfo.wilaya || "",
+            address: `${orderInfo.commune} - ${orderInfo.address}`, 
+            instructions: orderInfo.items || "", 
+            total: Number(orderInfo.totalPrice) || 0,
+            status: "en_cours" // Aligné avec ton nouveau système admin
+          }
+        ]);
+
+      if (dbError) throw dbError;
+      console.log("✅ Commande enregistrée avec succès sur Supabase !");
+    } catch (dbError: any) {
+      console.error("❌ Erreur de sauvegarde Supabase:", dbError.message);
+      // On laisse tourner la suite pour que tu reçoives quand même le Telegram si la DB a un problème
     }
 
-    // 📢 2. TRANSMISSION TELEGRAM
+    // 📢 2. TRANSMISSION TELEGRAM (Toujours 100% fonctionnelle)
     const botToken = "8640339011:AAFPTi3t_R-hl8mcjIao1qfbS8gCNLKcvPM"; 
     const chatId = "6188584965"; 
 
