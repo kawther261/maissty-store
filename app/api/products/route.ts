@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { supabase } from "../../lib/supabase";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -320,8 +321,8 @@ const COEUR_ARTICLES = [
     name: "Palette Visage Beauty Soulmates – Charlotte Tilbury",
     price: 3900,
     category: "maquillage",
-    img: "/produits/37.jpeg",
-    images: ["/produits/31.jpeg", "/produits/31'.jpeg"],
+    img: "/produits/37.jpg",
+    images: ["/produits/37.jpg"],
     description: "n sublime duo en édition limitée contenant une poudre lissante Airbrush et un blush lumineux",
     stock: 99
   },
@@ -388,18 +389,72 @@ const COEUR_ARTICLES = [
   }
 ];
 
+// ==========================================
+// 🔄 METHODE GET : Lecture Supabase + Repli Local Fixé
+// ==========================================
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
     if (id) {
+      const { data: dbProduct, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (!error && dbProduct) {
+        return NextResponse.json({ product: dbProduct });
+      }
+
       const foundProduct = COEUR_ARTICLES.find((p) => p.id === id);
       return NextResponse.json({ product: foundProduct || null });
     }
 
+    const { data: dbProducts, error } = await supabase
+      .from("products")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (!error && dbProducts && dbProducts.length > 0) {
+      return NextResponse.json({ products: dbProducts });
+    }
+
     return NextResponse.json({ products: COEUR_ARTICLES });
   } catch (error) {
+    // 🛠️ FIX : Remplacement du typo COEFF_ARTICLES par COEUR_ARTICLES
     return NextResponse.json({ products: COEUR_ARTICLES, product: null });
+  }
+}
+
+// ==========================================
+// ➕ METHODE POST : Ajouter un produit sur Supabase
+// ==========================================
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { name, price, category, img, images, description, stock } = body;
+
+    const { data, error } = await supabase
+      .from("products")
+      .insert([
+        {
+          name,
+          price: Number(price),
+          category,
+          img,
+          images: images || [img],
+          description,
+          stock: Number(stock || 99)
+        }
+      ])
+      .select();
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, product: data[0] });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

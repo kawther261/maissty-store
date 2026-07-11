@@ -1,31 +1,37 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from '@prisma/client';
+import { supabase } from "../../lib/supabase"; 
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
-
+// ==========================================
+// 🔄 METHODE GET : Charger les produits et commandes pour l'admin
+// ==========================================
 export async function GET() {
   try {
-    const rawProducts = await prisma.product.findMany({ 
-      orderBy: { createdAt: 'desc' },
-      include: { category: true } 
-    });
+    // 1️⃣ Récupérer les produits depuis Supabase
+    const { data: dbProducts, error: prodError } = await supabase
+      .from("products")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-    // ✨ LE FIX : On transforme la catégorie en texte simple ("parfums") 
-    // et on extrait l'image pour éviter que l'écran Admin ne plante !
-    const products = rawProducts.map(p => ({
+    if (prodError) throw prodError;
+
+    const products = (dbProducts || []).map(p => ({
       ...p,
-      category: p.category?.name || "parfums",
-      img: p.images && p.images.length > 0 ? p.images[0] : "/placeholder.jpg"
+      category: p.category || "parfums",
+      img: p.images && p.images.length > 0 ? p.images[0] : p.img || "/placeholder.jpg"
     }));
 
-    const rawOrders = await prisma.order.findMany({ orderBy: { createdAt: 'desc' } });
+    // 2️⃣ Récupérer les commandes depuis Supabase
+    const { data: dbOrders, error: orderError } = await supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (orderError) throw orderError;
     
-    const orders = rawOrders.map(o => ({
+    const orders = (dbOrders || []).map(o => ({
       id: o.id,
       firstName: o.fullName,
       lastName: "",
@@ -36,97 +42,93 @@ export async function GET() {
       deliveryType: "domicile",
       itemsSummary: o.instructions || "Articles",
       total: o.total,
-      status: o.status === "LIVREE" ? "livre" : "en_cours"
+      status: o.status === "livre" ? "livre" : "en_cours"
     }));
 
     return NextResponse.json({ products, orders });
-  } catch (error: any) {
+  } catch (error: any) { // 🛠️ FIX : Ajout de : any
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
+// ==========================================
+// 🛠️ METHODE POST : Ajouter, Modifier ou Supprimer
+// ==========================================
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { action, data } = body;
 
+    // ➕ ACTION : AJOUTER OU MODIFIER UN PRODUIT
     if (action === "SAVE_PRODUCT") {
-      const generatedSlug = `${(data.name || "product").toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-')}-${Date.now()}`;
-      const catName = (data.category || "parfums").trim();
+      const catName = (data.category || "parfums").trim().toLowerCase();
       
-      let category = await prisma.category.findFirst({
-        where: { name: { equals: catName, mode: 'insensitive' } }
-      });
-
-      if (!category) {
-        try {
-          category = await prisma.category.create({
-            data: { name: catName, slug: catName.toLowerCase().replace(/[\s_-]+/g, '-') }
-          });
-        } catch (createError) {
-          category = await prisma.category.findFirst({
-            where: { name: { equals: catName, mode: 'insensitive' } }
-          });
-        }
-      }
-
-      if (!category) {
-        return NextResponse.json({ error: "Erreur catégorie" }, { status: 400 });
-      }
+      const productPayload = {
+        name: data.name,
+        price: Number(data.price),
+        shortDesc: data.shortDesc || "",
+        description: data.shortDesc || "",
+        images: data.images || [],
+        img: data.images && data.images.length > 0 ? data.images[0] : "/placeholder.jpg",
+        category: catName,
+        stock: 99
+      };
 
       if (data.editingId) {
-        const updated = await prisma.product.update({
-          where: { id: data.editingId },
-          data: {
-            name: data.name,
-            price: Number(data.price),
-            shortDesc: data.shortDesc || "",
-            description: data.shortDesc || "",
-            images: data.images,
-            categoryId: category.id,
-            slug: generatedSlug,
-            stock: 99
-          }
-        });
-        return NextResponse.json({ success: true, product: updated });
+        const { data: updated, error } = await supabase
+          .from("products")
+          .update(productPayload)
+          .eq("id", data.editingId)
+          .select();
+
+        if (error) throw error;
+        return NextResponse.json({ success: true, product: updated[0] });
       } else {
-        const created = await prisma.product.create({
-          data: {
-            name: data.name,
-            price: Number(data.price),
-            shortDesc: data.shortDesc || "",
-            description: data.shortDesc || "",
-            images: data.images,
-            categoryId: category.id,
-            slug: generatedSlug,
-            stock: 99
-          }
-        });
-        return NextResponse.json({ success: true, product: created });
+        const { data: created, error } = await supabase
+          .from("products")
+          .insert([productPayload])
+          .select();
+
+        if (error) throw error;
+        return NextResponse.json({ success: true, product: created[0] });
       }
     }
 
+    // ❌ ACTION : SUPPRIMER UN PRODUIT
     if (action === "DELETE_PRODUCT") {
-      await prisma.product.delete({ where: { id: data.id } });
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", data.id);
+
+      if (error) throw error;
       return NextResponse.json({ success: true });
     }
 
+    // 🔄 ACTION : MODIFIER LE STATUT D'UNE COMMANDE
     if (action === "UPDATE_ORDER_STATUS") {
-      const nextStatus = data.status === "livre" ? "LIVREE" : "EN_ATTENTE";
-      await prisma.order.update({
-        where: { id: data.id },
-        data: { status: nextStatus as any }
-      });
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: data.status })
+        .eq("id", data.id);
+
+      if (error) throw error;
       return NextResponse.json({ success: true });
     }
 
+    // 🗑️ ACTION : SUPPRIMER UNE COMMANDE
     if (action === "DELETE_ORDER") {
-      await prisma.order.delete({ where: { id: data.id } });
+      const { error } = await supabase
+        .from("orders")
+        .delete()
+        .eq("id", data.id);
+
+      if (error) throw error;
       return NextResponse.json({ success: true });
     }
 
     return NextResponse.json({ error: "Action inconnue" }, { status: 400 });
-  } catch (error: any) {
+  } catch (error: any) { // 🛠️ FIX : Ajout de : any
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
