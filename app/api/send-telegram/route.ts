@@ -6,25 +6,36 @@ export async function POST(request: Request) {
     const orderInfo = await request.json();
 
     // 💾 1. SAUVEGARDE EN BASE DE DONNÉES SUPABASE
-    const { error: dbError } = await supabase
-      .from("orders")
-      .insert([
-        {
-          "fullName": orderInfo.customerName || "Client", // Clé avec majuscule exacte alignée sur ton SQL
-          phone: orderInfo.phone || "",
-          wilaya: orderInfo.wilaya || "",
-          address: `${orderInfo.commune || ""} - ${orderInfo.address || ""}`, 
-          instructions: orderInfo.items || "", 
-          total: Number(orderInfo.totalPrice) || 0,
-          status: "en_cours" 
-        }
-      ]);
+    const { data, error: dbError } = await supabase
+  .from("orders")
+  .insert([
+    {
+      fullName: orderInfo.customerName || "Client",
+      phone: orderInfo.phone || "",
+      wilaya: orderInfo.wilaya || "",
+      address: `${orderInfo.commune || ""} - ${orderInfo.address || ""}`,
+      instructions: orderInfo.items || "",
+      total: Number(orderInfo.totalPrice) || 0,
+      status: "en_cours",
+    },
+  ])
+  .select();
+
+console.log("DATA:", data);
+console.log("ERROR:", dbError);
 
     // Si la base de données échoue, on l'écrit dans les logs mais on ne bloque pas le client
     if (dbError) {
-      console.error("❌ Problème Supabase intercepté secrètement :", dbError.message);
-      return NextResponse.json({ success: true, status: "LOGGED_INTERNALLY" });
-    }
+  console.error("SUPABASE ERROR:", dbError);
+
+  return NextResponse.json(
+    {
+      success: false,
+      error: dbError.message
+    },
+    { status: 500 }
+  );
+}
 
     console.log("✅ Commande enregistrée avec succès sur Supabase !");
 
