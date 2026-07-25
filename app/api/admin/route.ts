@@ -66,7 +66,6 @@ export async function POST(req: Request) {
       const productPayload = {
         name: data.name,
         price: Number(data.price),
-        shortDesc: data.shortDesc || "",
         description: data.shortDesc || "",
         images: data.images || [],
         img: data.images && data.images.length > 0 ? data.images[0] : "/placeholder.jpg",
