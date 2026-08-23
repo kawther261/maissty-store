@@ -396,9 +396,7 @@ const COEUR_ARTICLES = [
     images: ["/produits/39.jpeg", "/produits/39'.jpg"],
     description: "Une brosse chauffante et soufflante ultra-puissante de 3000W au design vert avocat, conçue pour sécher, lisser et donner du volume tout en protégeant la brillance de vos cheveux.",
     stock: 99
-  }
-
-
+  },
 ];
 
 
