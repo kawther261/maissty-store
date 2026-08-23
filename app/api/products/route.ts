@@ -388,7 +388,7 @@ const COEUR_ARTICLES = [
     stock: 99
   },
   {
-    id: "prod-36",
+    id: "prod-39",
     name: "Brosse lizze",
     price: 6700,
     category: "maquillage",
@@ -397,7 +397,10 @@ const COEUR_ARTICLES = [
     description: "Une brosse chauffante et soufflante ultra-puissante de 3000W au design vert avocat, conçue pour sécher, lisser et donner du volume tout en protégeant la brillance de vos cheveux.",
     stock: 99
   }
+
+
 ];
+
 
 // ==========================================
 // 🔄 METHODE GET : Lecture Supabase + Repli Local Fixé
