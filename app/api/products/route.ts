@@ -373,7 +373,7 @@ const COEUR_ARTICLES = [
     price: 4500,
     category: "maquillage",
     img: "/produits/35.jpeg",
-    images: ["/produits/35.jpeg", "/produits/35'.jpeg", "/produits/35''.jpg"],
+    images: ["/produits/35.jpeg", "/produits/35'.jpeg", "/produits/35''.jepg"],
     description: "Le kit de coiffage idéal combinant la célèbre brosse chauffante et soufflante One-Step pour sécher et lisser en un seul geste, accompagnée de son gant de protection thermique contre la chaleur.",
     stock: 99
   },
@@ -403,7 +403,7 @@ const COEUR_ARTICLES = [
     price: 11200,
     category: "maquillage",
     img: "/produits/39.jpeg",
-    images: ["/produits/40.jpeg", "/produits/40'.jpg","/produits/40''.jpg"],
+    images: ["/produits/40.jpeg", "/produits/40'.jpg","/produits/40''.jpeg"],
     description: "Lisser Remington, conçue pour sécher, lisser et donner du volume tout en protégeant la brillance de vos cheveux.",
     stock: 99
   },
