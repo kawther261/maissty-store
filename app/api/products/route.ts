@@ -398,7 +398,7 @@ const COEUR_ARTICLES = [
     stock: 99
   },
  {
-    id: "prod-39",
+    id: "prod-40",
     name: "Lisser Remington ",
     price: 11200,
     category: "maquillage",
