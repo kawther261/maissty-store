@@ -397,6 +397,17 @@ const COEUR_ARTICLES = [
     description: "Une brosse chauffante et soufflante ultra-puissante de 3000W au design vert avocat, conçue pour sécher, lisser et donner du volume tout en protégeant la brillance de vos cheveux.",
     stock: 99
   },
+ {
+    id: "prod-39",
+    name: "Lisser Remington ",
+    price: 11200,
+    category: "maquillage",
+    img: "/produits/39.jpeg",
+    images: ["/produits/40.jpeg", "/produits/40'.jpg","/produits/40''.jpg"],
+    description: "Lisser Remington, conçue pour sécher, lisser et donner du volume tout en protégeant la brillance de vos cheveux.",
+    stock: 99
+  },
+
 ];
 
 
