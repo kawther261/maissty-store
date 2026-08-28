@@ -402,8 +402,8 @@ const COEUR_ARTICLES = [
     name: "Lisser Remington ",
     price: 11200,
     category: "maquillage",
-    img: "/produits/39.jpeg",
-    images: ["/produits/40.jpeg", "/produits/40'.jpg","/produits/40''.jpeg"],
+    img: "/produits/40.jpeg",
+    images: ["/produits/40.jpeg", "/produits/40'.jpeg","/produits/40-2.jpeg"],
     description: "Lisser Remington, conçue pour sécher, lisser et donner du volume tout en protégeant la brillance de vos cheveux.",
     stock: 99
   },
