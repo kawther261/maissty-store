@@ -18,15 +18,26 @@ function BoutiqueContent() {
 
     const loadBoutiqueProducts = async () => {
       try {
-        // ✨ LE FIX ICI : On appelle l'API légère /api/products au lieu de /api/admin
-        const res = await fetch("/api/products");
+        const res = await fetch("/api/products", { cache: "no-store" });
         const data = await res.json();
+        
         if (data.products) {
-          const normalized = data.products.map((p: any) => ({
-            ...p,
-            img: p.images && p.images.length > 0 ? p.images[0] : p.img || "/placeholder.jpg",
-            category: p.category?.name || p.category || "parfums"
-          }));
+          const normalized = data.products.map((p: any) => {
+            // Check for valid image URL
+            let mainImg = p.img || (p.images && p.images.length > 0 ? p.images[0] : null);
+
+            // If image is missing or a broken relative path, use a clean SVG data URI placeholder
+            if (!mainImg || typeof mainImg !== "string" || mainImg.startsWith("/produits/")) {
+              mainImg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' fill='%23f0ddd8'><rect width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%238b6860' font-family='sans-serif' font-size='14'>Pas d'image</text></svg>";
+            }
+
+            return {
+              ...p,
+              img: mainImg,
+              category: p.category?.name || p.category || "parfums"
+            };
+          });
+
           setProducts(normalized);
         }
       } catch (err) {
@@ -39,7 +50,7 @@ function BoutiqueContent() {
 
   const filteredProducts = products.filter((p) => {
     const name = (p?.name || "").toLowerCase();
-    const desc = (p?.shortDesc || "").toLowerCase();
+    const desc = (p?.shortDesc || p?.description || "").toLowerCase();
     const cat = (p?.category || "all").toLowerCase();
     const query = searchQuery.toLowerCase().trim();
 
