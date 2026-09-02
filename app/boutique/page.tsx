@@ -23,30 +23,44 @@ function BoutiqueContent() {
         
         if (data && Array.isArray(data.products)) {
           const normalized = data.products.map((p: any) => {
-            // Safe extraction of images array
-            const imagesArr = Array.isArray(p?.images) ? p.images : [];
-            
-            // Gather all candidate image strings safely
-            const candidates = [p?.img, p?.image, ...imagesArr].filter(
-              (url): url is string => typeof url === "string" && url.trim().length > 0
-            );
+            if (!p) return null;
 
-            // Find the first valid Cloudinary / HTTP URL
-            const validHttpUrl = candidates.find((url) => url.startsWith("http"));
+            // 1. Safely extract images array
+            let imagesArr: string[] = [];
+            if (Array.isArray(p.images)) {
+              imagesArr = p.images.filter((img: any) => typeof img === "string" && img.trim() !== "");
+            }
 
-            const mainImg = validHttpUrl || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' fill='%23f0ddd8'><rect width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%238b6860' font-family='sans-serif' font-size='14'>Pas d'image</text></svg>";
+            // 2. Determine primary image
+            let mainImg = typeof p.img === "string" && p.img.startsWith("http") ? p.img : null;
+            if (!mainImg && imagesArr.length > 0) {
+              const validHttp = imagesArr.find((url) => typeof url === "string" && url.startsWith("http"));
+              if (validHttp) mainImg = validHttp;
+            }
+
+            // Fallback placeholder
+            if (!mainImg) {
+              mainImg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' fill='%23f0ddd8'><rect width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%238b6860' font-family='sans-serif' font-size='14'>Pas d'image</text></svg>";
+            }
+
+            // 3. Safely normalize category to plain string
+            let catStr = "parfums";
+            if (typeof p.category === "string") {
+              catStr = p.category;
+            } else if (p.category && typeof p.category.name === "string") {
+              catStr = p.category.name;
+            }
 
             return {
-              ...p,
-              id: p?.id || Math.random().toString(),
-              name: String(p?.name || "Produit"),
-              price: Number(p?.price || 0),
+              id: p.id || String(Math.random()),
+              name: typeof p.name === "string" ? p.name : "Produit Sans Nom",
+              price: typeof p.price === "number" ? p.price : Number(p.price) || 0,
               img: mainImg,
               images: imagesArr.length > 0 ? imagesArr : [mainImg],
-              category: String(p?.category?.name || p?.category || "parfums"),
-              shortDesc: String(p?.shortDesc || p?.description || "")
+              category: catStr,
+              shortDesc: typeof p.description === "string" ? p.description : (typeof p.shortDesc === "string" ? p.shortDesc : "")
             };
-          });
+          }).filter(Boolean);
 
           setProducts(normalized);
         }
@@ -58,12 +72,13 @@ function BoutiqueContent() {
     loadBoutiqueProducts();
   }, [searchParams]);
 
-  // Safe search and category filtering
+  // Completely safe filter preventing n.indexOf errors
   const filteredProducts = products.filter((p) => {
-    const name = String(p?.name || "").toLowerCase();
-    const desc = String(p?.shortDesc || "").toLowerCase();
-    const cat = String(p?.category || "all").toLowerCase();
-    const query = searchQuery.toLowerCase().trim();
+    if (!p) return false;
+    const name = String(p.name || "").toLowerCase();
+    const desc = String(p.shortDesc || "").toLowerCase();
+    const cat = String(p.category || "all").toLowerCase();
+    const query = String(searchQuery || "").toLowerCase().trim();
 
     const matchesCategory = selectedCategory === "all" || cat === selectedCategory.toLowerCase();
     const matchesSearch = !query || name.includes(query) || desc.includes(query) || cat.includes(query);
