@@ -19,7 +19,11 @@ export async function GET(req: Request) {
         .eq("id", id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Single Product Fetch Error:", error);
+        return NextResponse.json({ product: null });
+      }
+
       return NextResponse.json({ product: dbProduct || null });
     }
 
@@ -28,12 +32,15 @@ export async function GET(req: Request) {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase Fetch Error:", error);
+      return NextResponse.json({ products: [] }, { status: 500 });
+    }
 
     return NextResponse.json({ products: dbProducts || [] });
   } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: error.message, products: [] },
       { status: 500 }
     );
   }
