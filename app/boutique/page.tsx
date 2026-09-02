@@ -73,18 +73,18 @@ function BoutiqueContent() {
   }, [searchParams]);
 
   // Completely safe filter preventing n.indexOf errors
-  const filteredProducts = products.filter((p) => {
-    if (!p) return false;
-    const name = String(p.name || "").toLowerCase();
-    const desc = String(p.shortDesc || "").toLowerCase();
-    const cat = String(p.category || "all").toLowerCase();
-    const query = String(searchQuery || "").toLowerCase().trim();
+ const filteredProducts = products.filter((p) => {
+  if (!p) return false;
+  const name = String(p.name || "").toLowerCase();
+  const desc = String(p.shortDesc || p.description || "").toLowerCase();
+  const cat = String(p.category || "all").toLowerCase();
+  const query = String(searchQuery || "").toLowerCase().trim();
 
-    const matchesCategory = selectedCategory === "all" || cat === selectedCategory.toLowerCase();
-    const matchesSearch = !query || name.includes(query) || desc.includes(query) || cat.includes(query);
+  const matchesCategory = selectedCategory === "all" || cat === selectedCategory.toLowerCase();
+  const matchesSearch = !query || name.includes(query) || desc.includes(query) || cat.includes(query);
 
-    return matchesCategory && matchesSearch;
-  });
+  return matchesCategory && matchesSearch;
+});
 
   const clearSearchFilter = () => {
     window.location.href = "/boutique" + (selectedCategory !== "all" ? `?category=${selectedCategory}` : "");
