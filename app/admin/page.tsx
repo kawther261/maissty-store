@@ -33,16 +33,21 @@ export default function AdminDashboard() {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   // 🔄 Charger les données depuis Supabase
-  const loadData = async () => {
-    try {
-      const res = await fetch("/api/admin");
-      const data = await res.json();
-      if (data.products) setProducts(data.products);
-      if (data.orders) setOrders(data.orders);
-    } catch (err) {
-      console.error("Erreur de chargement des données cloud:", err);
-    }
-  };
+const loadData = async () => {
+  try {
+    // 1. Fetch products from your /api/products route
+    const productsRes = await fetch("/api/products");
+    const productsData = await productsRes.json();
+    if (productsData.products) setProducts(productsData.products);
+
+    // 2. Fetch orders from your admin endpoint (if separate)
+    const adminRes = await fetch("/api/admin");
+    const adminData = await adminRes.json();
+    if (adminData.orders) setOrders(adminData.orders);
+  } catch (err) {
+    console.error("Erreur de chargement des données cloud:", err);
+  }
+};
 
   useEffect(() => {
     if (isAuthenticated) {
