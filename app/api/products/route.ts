@@ -37,7 +37,26 @@ export async function GET(req: Request) {
       return NextResponse.json({ products: [] }, { status: 500 });
     }
 
-    return NextResponse.json({ products: dbProducts || [] });
+    // Normalize products data to guarantee valid image fields
+    const sanitizedProducts = (dbProducts || []).map((p: any) => {
+      let imgVal = p.img;
+      let imgsArr = Array.isArray(p.images) ? p.images : [];
+
+      if (!imgVal && imgsArr.length > 0) {
+        imgVal = imgsArr[0];
+      }
+      if (imgsArr.length === 0 && imgVal) {
+        imgsArr = [imgVal];
+      }
+
+      return {
+        ...p,
+        img: imgVal || "/placeholder.jpg",
+        images: imgsArr.length > 0 ? imgsArr : ["/placeholder.jpg"]
+      };
+    });
+
+    return NextResponse.json({ products: sanitizedProducts });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message, products: [] },
@@ -54,16 +73,20 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { name, price, category, img, images, description, stock } = body;
 
+    // Sanitize images before insertion
+    let primaryImg = img || (Array.isArray(images) && images.length > 0 ? images[0] : null) || "";
+    let imageArray = Array.isArray(images) && images.length > 0 ? images : (primaryImg ? [primaryImg] : []);
+
     const { data, error } = await supabase
       .from("products")
       .insert([
         {
           name,
-          price: Number(price),
-          category,
-          img,
-          images: images && images.length > 0 ? images : [img],
-          description,
+          price: Number(price) || 0,
+          category: category || "parfums",
+          img: primaryImg,
+          images: imageArray,
+          description: description || "",
           stock: Number(stock || 99)
         }
       ])
