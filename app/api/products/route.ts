@@ -8,14 +8,11 @@ export const revalidate = 0;
 const cleanImageUrl = (url: string) => {
   if (!url || typeof url !== "string") return "/placeholder.jpg";
 
-  // If it's already a clean placeholder or base64, return as-is
   if (url.startsWith("data:") || url.startsWith("/")) return url;
 
-  // Extract the filename (e.g., "1.jpg", "10.jpg")
   const filename = url.split("/").pop() || "";
   if (!filename) return url;
 
-  // Force exact Cloudinary target format
   return `https://res.cloudinary.com/wigng2m5/image/upload/${filename}`;
 };
 
@@ -63,10 +60,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ product: sanitizeProduct(dbProduct) });
     }
 
+    // Fetch all products (handles up to 1000 items)
     const { data: dbProducts, error } = await supabase
       .from("products")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("id", { ascending: true });
 
     if (error) {
       console.error("Supabase Fetch Error:", error);
@@ -105,7 +103,7 @@ export async function POST(req: Request) {
           img: primaryImg,
           images: imageArray,
           description: description || "",
-          stock: Number(stock || 99)
+          stock: Number(stock ?? 99)
         }
       ])
       .select();
@@ -113,6 +111,64 @@ export async function POST(req: Request) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, product: sanitizeProduct(data[0]) });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+// ==========================================
+// ✏️ PUT: Update existing product
+// ==========================================
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+    const { id, name, price, category, img, images, description, stock } = body;
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: "Product ID is required" }, { status: 400 });
+    }
+
+    let primaryImg = img || (Array.isArray(images) && images.length > 0 ? images[0] : null) || "";
+    let imageArray = Array.isArray(images) && images.length > 0 ? images : (primaryImg ? [primaryImg] : []);
+
+    const { data, error } = await supabase
+      .from("products")
+      .update({
+        name,
+        price: Number(price) || 0,
+        category,
+        img: primaryImg,
+        images: imageArray,
+        description,
+        stock: Number(stock ?? 0)
+      })
+      .eq("id", id)
+      .select();
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, product: sanitizeProduct(data[0]) });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+// ==========================================
+// 🗑️ DELETE: Delete product
+// ==========================================
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: "ID required" }, { status: 400 });
+    }
+
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

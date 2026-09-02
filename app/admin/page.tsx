@@ -1,6 +1,19 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { BarChart3, ShoppingBag, Package, Plus, Trash2, Edit, X, Lock, Upload, GripVertical } from "lucide-react";
+
+// Helper to clean Cloudinary URLs automatically
+const cleanImageUrl = (url: string) => {
+  if (!url || typeof url !== "string") return "/placeholder.jpg";
+  if (url.startsWith("data:")) return url;
+
+  let clean = url.replace(/['"\s]/g, "").trim().replace(/\.jpeg$/i, ".jpg");
+  const filename = clean.split("/").pop() || "";
+  const baseName = filename.split(".")[0].replace(/[^a-zA-Z0-9_-]/g, "");
+
+  return baseName ? `https://res.cloudinary.com/wigng2m5/image/upload/${baseName}.jpg` : "/placeholder.jpg";
+};
 
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -15,11 +28,11 @@ export default function AdminDashboard() {
   const [formPrice, setFormPrice] = useState("");
   const [formCategory, setFormCategory] = useState("parfums");
   const [formDesc, setFormDesc] = useState("");
-  const [formImages, setFormImages] = useState<string[]>([]);
+  const [formImagesInput, setFormImagesInput] = useState("");
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
-  // 🔄 Charger les données en direct depuis Supabase via l'API interne
+  // 🔄 Charger les données depuis Supabase
   const loadData = async () => {
     try {
       const res = await fetch("/api/admin");
@@ -43,7 +56,7 @@ export default function AdminDashboard() {
     else alert("Mot de passe incorrect.");
   };
 
-  // 🪄 Outils de tri Drag & Drop visuel
+  // 🪄 Drag & Drop Handler
   const handleDragStart = (index: number) => { setDraggedIndex(index); };
   const handleDragOver = (e: React.DragEvent, index: number) => { e.preventDefault(); };
   const handleDrop = (index: number) => {
@@ -85,78 +98,42 @@ export default function AdminDashboard() {
     }
   };
 
-  // 🪄 Compresseur de photos
-  const compressAndAddImage = (file: File) => {
-    return new Promise<string>((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          const MAX_WIDTH = 500;
-          let width = img.width;
-          let height = img.height;
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          ctx?.drawImage(img, 0, 0, width, height);
-          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
-          resolve(compressedBase64);
-        };
-        img.src = event.target?.result as string;
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const filesArray = Array.from(files);
-      const compressedList: string[] = [];
-      for (const file of filesArray) {
-        const compressedData = await compressAndAddImage(file);
-        compressedList.push(compressedData);
-      }
-      setFormImages((prev) => [...prev, ...compressedList]);
-    }
-  };
-
-  const removeUploadedImage = (indexToRemove: number) => {
-    setFormImages(formImages.filter((_, idx) => idx !== indexToRemove));
-  };
-
   // 💾 Sauvegarder ou Modifier un produit
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalImages = formImages.length > 0 ? formImages : ["https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=500"];
+
+    // Parse image list from text area input
+    const parsedImages = formImagesInput
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+      .map(cleanImageUrl);
+
+    const primaryImage = parsedImages.length > 0 ? parsedImages[0] : "/placeholder.jpg";
 
     const payload = {
-      editingId: editingId,
+      id: editingId || `prod-${Date.now()}`,
       name: formName,
-      price: Number(formPrice),
+      price: Number(formPrice) || 0,
       category: formCategory,
-      shortDesc: formDesc,
-      images: finalImages
+      description: formDesc,
+      img: primaryImage,
+      images: parsedImages.length > 0 ? parsedImages : [primaryImage]
     };
 
     try {
-      const res = await fetch("/api/admin", {
-        method: "POST",
+      const res = await fetch("/api/products", {
+        method: editingId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "SAVE_PRODUCT", data: payload })
+        body: JSON.stringify(payload)
       });
       
       const result = await res.json();
-      if (result.success) {
+      if (result.success || res.ok) {
         await loadData();
         setIsModalOpen(false);
       } else {
-        alert("🚨 Erreur Cloud : " + result.error);
+        alert("🚨 Erreur Cloud : " + (result.error || "Échec de l'enregistrement"));
       }
     } catch (error) {
       alert("🚨 Connexion impossible avec la base de données.");
@@ -167,30 +144,31 @@ export default function AdminDashboard() {
   const handleDeleteProduct = async (id: string) => {
     if (confirm("Supprimer définitivement ce produit ?")) {
       try {
-        const res = await fetch("/api/admin", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "DELETE_PRODUCT", data: { id } })
-        });
+        const res = await fetch(`/api/products?id=${id}`, { method: "DELETE" });
         if (res.ok) loadData();
       } catch (error) {
-        alert("Erreur lors du suppression du produit.");
+        alert("Erreur lors de la suppression du produit.");
       }
     }
   };
 
   const openAddModal = () => {
-    setEditingId(null); setFormName(""); setFormPrice(""); setFormCategory("parfums"); setFormDesc(""); setFormImages([]);
+    setEditingId(null); 
+    setFormName(""); 
+    setFormPrice(""); 
+    setFormCategory("parfums"); 
+    setFormDesc(""); 
+    setFormImagesInput("");
     setIsModalOpen(true);
   };
   
   const openEditModal = (p: any) => {
     setEditingId(p.id); 
-    setFormName(p.name); 
-    setFormPrice(p.price.toString()); 
-    setFormCategory(p.category); 
+    setFormName(p.name || ""); 
+    setFormPrice(p.price ? p.price.toString() : "0"); 
+    setFormCategory(p.category || "parfums"); 
     setFormDesc(p.description || p.shortDesc || ""); 
-    setFormImages(p.images || []);
+    setFormImagesInput(Array.isArray(p.images) ? p.images.join(", ") : (p.img || ""));
     setIsModalOpen(true);
   };
 
@@ -229,9 +207,9 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-2xl border border-[#F0DDD8] shadow-sm">
                 <p className="text-xs text-[#8B6860] uppercase font-medium">Chiffre d&apos;affaires</p>
-                <p className="text-2xl font-bold font-playfair mt-2">{orders.filter(o => o.status === "livre").reduce((sum, o) => sum + o.total, 0).toLocaleString()} DA</p>
+                <p className="text-2xl font-bold font-playfair mt-2">{orders.filter(o => o.status === "livre").reduce((sum, o) => sum + (o.total || 0), 0).toLocaleString()} DA</p>
               </div>
-              <div className="bg-white p-6 rounded-2xl border border-[#F0DDD8] shadow-sm">
+              <div className="bg-[#white] p-6 rounded-2xl border border-[#F0DDD8] shadow-sm">
                 <p className="text-xs text-[#8B6860] uppercase font-medium">Total Commandes</p>
                 <p className="text-2xl font-bold font-playfair mt-2">{orders.length} Reçues</p>
               </div>
@@ -274,10 +252,12 @@ export default function AdminDashboard() {
                       <td className="p-4 text-center cursor-grab active:cursor-grabbing text-neutral-400 hover:text-black">
                         <div className="flex justify-center"><GripVertical size={16} /></div>
                       </td>
-                      <td className="p-4"><img src={p.images?.[0] || p.img || "/placeholder.jpg"} alt="" className="w-10 h-10 rounded-md object-cover border" /></td>
+                      <td className="p-4">
+                        <img src={cleanImageUrl(p.images?.[0] || p.img)} alt="" className="w-10 h-10 rounded-md object-cover border" />
+                      </td>
                       <td className="p-4 font-bold">{p.name}</td>
                       <td className="p-4 uppercase text-[10px] text-[#8B6860] font-bold">{p.category}</td>
-                      <td className="p-4 font-bold">{p.price.toLocaleString()} DA</td>
+                      <td className="p-4 font-bold">{(p.price || 0).toLocaleString()} DA</td>
                       <td className="p-4 text-center">
                         <div className="flex justify-center gap-2">
                           <button onClick={() => openEditModal(p)} className="p-1.5 text-blue-600"><Edit size={14} /></button>
@@ -333,7 +313,7 @@ export default function AdminDashboard() {
                         </span>
                       </td>
                       <td className="p-4 text-[#8B6860] max-w-xs truncate">{o.itemsSummary}</td>
-                      <td className="p-4 font-bold text-green-950 text-sm">{o.total.toLocaleString()} DA</td>
+                      <td className="p-4 font-bold text-green-950 text-sm">{(o.total || 0).toLocaleString()} DA</td>
                       
                       <td className="p-4 text-center">
                         <select
@@ -403,23 +383,14 @@ export default function AdminDashboard() {
                 <textarea value={formDesc} onChange={(e) => setFormDesc(e.target.value)} rows={2} className="w-full px-3 py-2 border border-[#F0DDD8] rounded outline-none bg-[#FDF6F3]"></textarea>
               </div>
               <div>
-                <label className="block font-bold text-[#2C1810] uppercase tracking-wider mb-2">Photos du produit</label>
-                <div className="space-y-3">
-                  <label className="flex items-center justify-center gap-2 bg-neutral-50 hover:bg-neutral-100 border-2 border-dashed border-[#F0DDD8] py-4 rounded-xl cursor-pointer font-semibold text-[#2C1810]">
-                    <Upload size={16} /> Choisir des fichiers locaux
-                    <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
-                  </label>
-                  {formImages.length > 0 && (
-                    <div className="grid grid-cols-5 gap-2 bg-[#FDF6F3] p-3 rounded-xl border border-[#F0DDD8]">
-                      {formImages.map((img, idx) => (
-                        <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border bg-white group">
-                          <img src={img} alt="" className="w-full h-full object-cover" />
-                          <button type="button" onClick={() => removeUploadedImage(idx)} className="absolute inset-0 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><X size={12} /></button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <label className="block font-bold text-[#2C1810] uppercase tracking-wider mb-2">URLs des Images Cloudinary (séparées par une virgule)</label>
+                <textarea
+                  value={formImagesInput}
+                  onChange={(e) => setFormImagesInput(e.target.value)}
+                  placeholder="https://res.cloudinary.com/wigng2m5/image/upload/1.jpg, https://..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-[#F0DDD8] rounded outline-none bg-[#FDF6F3] font-mono text-[11px]"
+                />
               </div>
               <div className="pt-2 flex justify-end gap-3">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-[#F0DDD8] rounded text-[#8B6860] uppercase font-medium">Annuler</button>
