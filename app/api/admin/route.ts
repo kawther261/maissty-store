@@ -46,7 +46,7 @@ export async function GET() {
     }));
 
     return NextResponse.json({ products, orders });
-  } catch (error: any) { // 🛠️ FIX : Ajout de : any
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     if (action === "SAVE_PRODUCT") {
       const catName = (data.category || "parfums").trim().toLowerCase();
       
-      const productPayload = {
+      const productPayload: Record<string, any> = {
         name: data.name,
         price: Number(data.price),
         description: data.shortDesc || "",
@@ -81,15 +81,18 @@ export async function POST(req: Request) {
           .select();
 
         if (error) throw error;
-        return NextResponse.json({ success: true, product: updated[0] });
+        return NextResponse.json({ success: true, product: updated?.[0] });
       } else {
+        // 🛠️ FIX: Generate ID explicitly if missing from payload
+        productPayload.id = data.id || crypto.randomUUID();
+
         const { data: created, error } = await supabase
           .from("products")
           .insert([productPayload])
           .select();
 
         if (error) throw error;
-        return NextResponse.json({ success: true, product: created[0] });
+        return NextResponse.json({ success: true, product: created?.[0] });
       }
     }
 
@@ -127,7 +130,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ error: "Action inconnue" }, { status: 400 });
-  } catch (error: any) { // 🛠️ FIX : Ajout de : any
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
