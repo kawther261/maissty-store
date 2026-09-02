@@ -19,30 +19,45 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
 
-  // Détecteur d'image universel
-  const productImg = 
-    (product.images && product.images.length > 0 ? product.images[0] : null) || 
-    product.img || 
-    product.image || 
-    "/placeholder.jpg";
+  // Helper function to pick the first valid HTTPS / Cloudinary URL
+  const getValidImageUrl = () => {
+    const candidates = [
+      product.img,
+      product.image,
+      ...(Array.isArray(product.images) ? product.images : []),
+    ].filter(Boolean);
 
-  // 🔄 1. Vérifier si ce produit est déjà dans les favoris au chargement de la page
+    // 1. Prefer external HTTPS / Cloudinary URLs
+    const validHttpUrl = candidates.find(
+      (url) => typeof url === "string" && url.startsWith("http")
+    );
+    if (validHttpUrl) return validHttpUrl;
+
+    // 2. Fallback to SVG data URI placeholder if no valid HTTP image exists
+    return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' fill='%23f0ddd8'><rect width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%238b6860' font-family='sans-serif' font-size='14'>Pas d'image</text></svg>";
+  };
+
+  const productImg = getValidImageUrl();
+
   useEffect(() => {
     const keyWith3S = localStorage.getItem("maisssty_favorites");
     const keyWith2S = localStorage.getItem("maissty_favorites");
     const saved = keyWith3S || keyWith2S;
     
     if (saved) {
-      const favorites = JSON.parse(saved);
-      const found = favorites.some((fav: any) => fav.id === product.id);
-      setIsFavorite(found);
+      try {
+        const favorites = JSON.parse(saved);
+        const found = favorites.some((fav: any) => fav.id === product.id);
+        setIsFavorite(found);
+      } catch (err) {
+        console.error("Error reading favorites:", err);
+      }
     }
   }, [product.id]);
 
-  // 🪄 2. Fonction de clic pour Ajouter / Retirer des favoris instantanément
   const toggleFavorite = (e: React.MouseEvent) => {
-    e.preventDefault(); // 🛑 Empêche d'ouvrir la page produit lors du clic sur le cœur
-    e.stopPropagation(); // 🛑 Bloque la propagation du clic au reste de la carte
+    e.preventDefault();
+    e.stopPropagation();
 
     const keyWith3S = localStorage.getItem("maisssty_favorites");
     const keyWith2S = localStorage.getItem("maissty_favorites");
@@ -51,23 +66,20 @@ export function ProductCard({ product }: ProductCardProps) {
     let currentFavorites = saved ? JSON.parse(saved) : [];
 
     if (isFavorite) {
-      // Si déjà dans les favoris : on l'enlève
       currentFavorites = currentFavorites.filter((fav: any) => fav.id !== product.id);
       setIsFavorite(false);
     } else {
-      // Si pas dans les favoris : on l'ajoute avec toutes ses données pour la page Favoris
       currentFavorites.push({
         id: product.id,
         name: product.name,
         price: product.price,
-        images: product.images || [productImg],
+        images: [productImg],
         category: product.category || "",
         shortDesc: product.shortDesc || ""
       });
       setIsFavorite(true);
     }
 
-    // Sauvegarde immédiate dans la mémoire du navigateur (les deux clés par sécurité)
     localStorage.setItem("maisssty_favorites", JSON.stringify(currentFavorites));
     localStorage.setItem("maissty_favorites", JSON.stringify(currentFavorites));
   };
@@ -75,7 +87,7 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <div className="bg-white rounded-3xl border border-[#F0DDD8]/60 shadow-xs overflow-hidden flex flex-col justify-between group p-4 space-y-4 relative hover:shadow-md transition-all duration-300">
       
-      {/* ❤️ LE BOUTON CŒUR INTERACTIF (Synchronisé avec image_56217e.jpg) */}
+      {/* Heart Button */}
       <button 
         onClick={toggleFavorite}
         className="absolute top-6 right-6 z-30 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center shadow-md border border-[#F0DDD8]/40 hover:scale-105 transition-transform cursor-pointer"
@@ -88,7 +100,7 @@ export function ProductCard({ product }: ProductCardProps) {
         />
       </button>
 
-      {/* Image du produit */}
+      {/* Product Image */}
       <Link href={`/produit/${product.id}`} className="relative aspect-square w-full bg-[#FDF6F3] rounded-2xl overflow-hidden block">
         <img 
           src={productImg} 
@@ -97,7 +109,7 @@ export function ProductCard({ product }: ProductCardProps) {
         />
       </Link>
 
-      {/* Informations textuelles */}
+      {/* Product Details */}
       <div className="space-y-1 flex-grow flex flex-col justify-between">
         <div>
           <h3 className="font-playfair font-bold text-xs sm:text-sm text-[#2C1810]">{product.name}</h3>
@@ -106,7 +118,7 @@ export function ProductCard({ product }: ProductCardProps) {
           </p>
         </div>
         
-        {/* Prix et Panier */}
+        {/* Price & Cart */}
         <div className="flex items-center justify-between pt-3 mt-auto border-t border-[#FDF6F3]">
           <span className="font-inter font-bold text-xs text-black">
             {product.price?.toLocaleString()} DA
