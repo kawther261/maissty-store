@@ -3,7 +3,6 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ProductCard } from "../../components/ProductCard";
-import { CartDrawer } from "../../components/CartDrawer";
 import { X } from "lucide-react";
 
 // Helper to fix Cloudinary URLs or relative paths automatically
@@ -209,7 +208,7 @@ function BoutiqueContent() {
       )}
 
       {/* Cart Side Drawer */}
-      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+  
     </div>
   );
 }

@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { ShoppingBag, Heart } from "lucide-react";
 import Link from "next/link";
@@ -7,7 +6,7 @@ import { useCartStore } from "../store/useCartStore";
 
 interface ProductCardProps {
   product?: {
-    id: string | number;
+    id: string;
     name?: string;
     price?: number;
     images?: string[];
@@ -23,10 +22,8 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
 
-  // 🛠️ SANITIZE ID: Strips non-numeric prefixes (e.g., "prod-12" -> "12")
-  const rawId = product?.id ? String(product.id) : "unknown";
-  const cleanId = rawId.replace(/\D/g, "") || rawId;
-
+  // Safe extractors to prevent any null/undefined crashes
+  const productId = product?.id || "unknown";
   const productName = typeof product?.name === "string" ? product.name : "Produit";
   const productPrice = typeof product?.price === "number" ? product.price : Number(product?.price) || 0;
   const productCategory = typeof product?.category === "string" ? product.category : "";
@@ -46,16 +43,18 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
       ...rawImages
     ].filter((item): item is string => typeof item === "string" && item.trim().length > 0);
 
+    // 1. Prefer external HTTPS / Cloudinary URLs
     const validHttpUrl = candidates.find((url) => url.startsWith("http"));
     if (validHttpUrl) return validHttpUrl;
 
+    // 2. Fallback to SVG data URI placeholder if no valid HTTP image exists
     return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' fill='%23f0ddd8'><rect width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%238b6860' font-family='sans-serif' font-size='14'>Pas d'image</text></svg>";
   };
 
   const productImg = getValidImageUrl();
 
   useEffect(() => {
-    if (!cleanId || cleanId === "unknown") return;
+    if (!productId || productId === "unknown") return;
 
     try {
       const keyWith3S = localStorage.getItem("maisssty_favorites");
@@ -65,20 +64,20 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
       if (saved) {
         const favorites = JSON.parse(saved);
         if (Array.isArray(favorites)) {
-          const found = favorites.some((fav: any) => fav && String(fav.id) === cleanId);
+          const found = favorites.some((fav: any) => fav && fav.id === productId);
           setIsFavorite(found);
         }
       }
     } catch (err) {
       console.error("Error reading favorites:", err);
     }
-  }, [cleanId]);
+  }, [productId]);
 
   const toggleFavorite = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!cleanId || cleanId === "unknown") return;
+    if (!productId || productId === "unknown") return;
 
     try {
       const keyWith3S = localStorage.getItem("maisssty_favorites");
@@ -94,11 +93,11 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
       }
 
       if (isFavorite) {
-        currentFavorites = currentFavorites.filter((fav: any) => fav && String(fav.id) !== cleanId);
+        currentFavorites = currentFavorites.filter((fav: any) => fav && fav.id !== productId);
         setIsFavorite(false);
       } else {
         currentFavorites.push({
-          id: cleanId,
+          id: productId,
           name: productName,
           price: productPrice,
           images: [productImg],
@@ -120,14 +119,16 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
 
+    // 1. Add item to Zustand cart store
     addItem({
-      id: cleanId,
+      id: productId,
       name: productName,
       price: productPrice,
       img: productImg,
       quantity: 1,
     });
 
+    // 2. Trigger side drawer callback
     if (onAddToCart) {
       onAddToCart();
     }
@@ -150,8 +151,8 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
         />
       </button>
 
-      {/* Product Image Link with Clean Numeric ID */}
-      <Link href={`/produit/${cleanId}`} className="relative aspect-square w-full bg-[#FDF6F3] rounded-2xl overflow-hidden block">
+      {/* Product Image */}
+      <Link href={`/produit/${productId}`} className="relative aspect-square w-full bg-[#FDF6F3] rounded-2xl overflow-hidden block">
         <img 
           src={productImg} 
           alt={productName} 
