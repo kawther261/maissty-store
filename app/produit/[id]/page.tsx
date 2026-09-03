@@ -10,8 +10,11 @@ import { CartDrawer } from "@/components/CartDrawer";
 export default function ProductDetailPage() {
   const params = useParams();
   
-  // Safely resolve raw ID string across Next.js dynamic routing edge cases
+  // Extract raw ID parameter
   const rawId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+
+  // Extract clean digits for databases expecting pure integers (e.g. "prod-15" -> "15")
+  const cleanId = rawId ? rawId.replace(/\D/g, "") : "";
 
   const addItem = useCartStore((state: any) => state.addItem);
   const [product, setProduct] = useState<any>(null);
@@ -29,34 +32,37 @@ export default function ProductDetailPage() {
   const [newReviewRating, setNewReviewRating] = useState(5);
 
   useEffect(() => {
-    // Wait until router params fully resolve on client mount
     if (!rawId) return;
 
     const loadProductAndReviews = async () => {
       setLoading(true);
       try {
-        console.log("Fetching product with ID parameter:", rawId);
+        let fetchedProduct = null;
 
-        // Call singular API route endpoint
-        const res = await fetch(`/api/product?id=${encodeURIComponent(rawId)}`, { 
-          cache: "no-store" 
-        });
-        
-        if (!res.ok) {
-          throw new Error(`Server returned status ${res.status}`);
+        // Step 1: Try fetching with pure numeric ID if extracted
+        if (cleanId) {
+          const res = await fetch(`/api/product?id=${encodeURIComponent(cleanId)}`, { cache: "no-store" });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.product) fetchedProduct = data.product;
+          }
         }
 
-        const data = await res.json();
-        console.log("API Response received:", data);
+        // Step 2: Fallback to raw string ID if numeric fetch failed or cleanId is equal to rawId
+        if (!fetchedProduct) {
+          const res = await fetch(`/api/product?id=${encodeURIComponent(rawId)}`, { cache: "no-store" });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.product) fetchedProduct = data.product;
+          }
+        }
 
-        if (data && data.product) {
-          const p = data.product;
+        if (fetchedProduct) {
           setProduct({
-            ...p,
-            category: p.category?.name || p.category || "parfums"
+            ...fetchedProduct,
+            category: fetchedProduct.category?.name || fetchedProduct.category || "parfums"
           });
         } else {
-          console.warn("Product object returned null from API route.");
           setProduct(null);
         }
       } catch (err) {
@@ -85,7 +91,7 @@ export default function ProductDetailPage() {
     };
 
     loadProductAndReviews();
-  }, [rawId]);
+  }, [rawId, cleanId]);
 
   if (loading) {
     return (
