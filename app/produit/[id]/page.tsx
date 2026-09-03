@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useCartStore } from "../../../store/useCartStore"; 
 import { ShoppingBag, Star, ArrowLeft, Heart, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
 import Link from "next/link";
-import { CartDrawer } from "@/components/CartDrawer"; // 👈 Import your CartDrawer component
+import { CartDrawer } from "@/components/CartDrawer";
 
 export default function ProductDetailPage() {
   const params = useParams();
-  const productId = params?.id as string;
+  
+  // Safely resolve raw ID string across Next.js dynamic routing edge cases
+  const rawId = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
   const addItem = useCartStore((state: any) => state.addItem);
   const [product, setProduct] = useState<any>(null);
@@ -17,7 +19,7 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  // 🛒 STATE FOR CART DRAWER (Replaces native browser alert)
+  // 🛒 STATE FOR CART DRAWER
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   // 📝 ÉTATS POUR LES VRAIS AVIS
@@ -26,50 +28,69 @@ export default function ProductDetailPage() {
   const [newReviewComment, setNewReviewComment] = useState("");
   const [newReviewRating, setNewReviewRating] = useState(5);
 
-  // Charger le produit depuis Neon Cloud et ses avis correspondants
   useEffect(() => {
-    if (!productId) return;
-    
+    // Wait until router params fully resolve on client mount
+    if (!rawId) return;
+
     const loadProductAndReviews = async () => {
+      setLoading(true);
       try {
-        // 1. Charger le produit depuis l'API (/api/product)
-        const res = await fetch(`/api/product?id=${productId}`, { cache: "no-store" });
-        const data = await res.json();
+        console.log("Fetching product with ID parameter:", rawId);
+
+        // Call singular API route endpoint
+        const res = await fetch(`/api/product?id=${encodeURIComponent(rawId)}`, { 
+          cache: "no-store" 
+        });
         
-        if (data.product) {
+        if (!res.ok) {
+          throw new Error(`Server returned status ${res.status}`);
+        }
+
+        const data = await res.json();
+        console.log("API Response received:", data);
+
+        if (data && data.product) {
           const p = data.product;
           setProduct({
             ...p,
             category: p.category?.name || p.category || "parfums"
           });
+        } else {
+          console.warn("Product object returned null from API route.");
+          setProduct(null);
         }
       } catch (err) {
         console.error("Erreur lors du chargement du produit :", err);
+        setProduct(null);
       } finally {
         setLoading(false);
       }
 
-      // 2. Charger les avis
-      const savedReviews = localStorage.getItem(`maisssty_reviews_${productId}`);
+      // Load reviews from localStorage
+      const savedReviews = localStorage.getItem(`maisssty_reviews_${rawId}`);
       if (savedReviews) {
-        setReviews(JSON.parse(savedReviews));
+        try {
+          setReviews(JSON.parse(savedReviews));
+        } catch {
+          setReviews([]);
+        }
       } else {
         const defaultReviews = [
           { id: 1, name: "Amel B.", rating: 5, comment: "La qualité du cuir est incroyable, les finitions sont parfaites. Je recommande !", date: "12/05/2026" },
           { id: 2, name: "Yasmine K.", rating: 4, comment: "Très beau sac, emballage soigné et livraison rapide en 48h.", date: "02/06/2026" }
         ];
         setReviews(defaultReviews);
-        localStorage.setItem(`maisssty_reviews_${productId}`, JSON.stringify(defaultReviews));
+        localStorage.setItem(`maisssty_reviews_${rawId}`, JSON.stringify(defaultReviews));
       }
     };
 
     loadProductAndReviews();
-  }, [productId]);
+  }, [rawId]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FDF6F3] flex flex-col items-center justify-center text-xs text-[#8B6860]">
-        <p>Chargement de votre article Maisssty...</p>
+        <p className="animate-pulse">Chargement de votre article Maisssty...</p>
         <Link href="/boutique" className="mt-4 text-black underline">Retourner à la boutique</Link>
       </div>
     );
@@ -78,8 +99,9 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div className="min-h-screen bg-[#FDF6F3] flex flex-col items-center justify-center text-xs text-[#8B6860]">
-        <p>Article introuvable ou inexistant.</p>
-        <Link href="/boutique" className="mt-4 text-black underline">Retourner à la boutique</Link>
+        <p className="text-sm font-semibold text-neutral-800">Article introuvable ou inexistant.</p>
+        <p className="text-[11px] text-neutral-500 mt-1">ID recherché : <code className="bg-neutral-200 px-1 py-0.5 rounded">{rawId || "Inconnu"}</code></p>
+        <Link href="/boutique" className="mt-4 text-black underline font-medium">Retourner à la boutique</Link>
       </div>
     );
   }
@@ -96,7 +118,6 @@ export default function ProductDetailPage() {
     setActiveImageIdx((prevIdx) => prevIdx === productImages.length - 1 ? 0 : prevIdx + 1);
   };
 
-  // 🛍️ FIX: Open slide-over drawer on add to cart instead of triggering browser alert
   const handleAddToCart = () => {
     for (let i = 0; i < quantity; i++) {
       addItem(product);
@@ -118,7 +139,7 @@ export default function ProductDetailPage() {
 
     const updatedReviews = [newReview, ...reviews];
     setReviews(updatedReviews);
-    localStorage.setItem(`maisssty_reviews_${productId}`, JSON.stringify(updatedReviews));
+    localStorage.setItem(`maisssty_reviews_${rawId}`, JSON.stringify(updatedReviews));
 
     setNewReviewName("");
     setNewReviewComment("");

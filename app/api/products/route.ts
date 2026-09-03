@@ -8,14 +8,11 @@ export const revalidate = 0;
 const cleanImageUrl = (url: string) => {
   if (!url || typeof url !== "string") return "/placeholder.jpg";
 
-  // If it's already a clean placeholder or base64, return as-is
   if (url.startsWith("data:") || url.startsWith("/")) return url;
 
-  // Extract the filename (e.g., "1.jpg", "10.jpg")
   const filename = url.split("/").pop() || "";
   if (!filename) return url;
 
-  // Force exact Cloudinary target format
   return `https://res.cloudinary.com/wigng2m5/image/upload/${filename}`;
 };
 
@@ -49,33 +46,39 @@ export async function GET(req: Request) {
     const rawId = searchParams.get("id");
 
     if (rawId) {
-      // Extract numeric value from IDs like "prod-10" -> "10"
-      const cleanNumericId = rawId.replace(/\D/g, "");
-      const parsedId = cleanNumericId ? parseInt(cleanNumericId, 10) : null;
+      // Extract numeric digits from string (e.g. "prod-10" -> 10 or "10" -> 10)
+      const cleanDigits = rawId.replace(/\D/g, "");
+      const numericId = cleanDigits ? parseInt(cleanDigits, 10) : null;
 
-      // 1. First try matching exact raw string ID
-      let { data: dbProduct, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("id", rawId)
-        .maybeSingle();
+      let dbProduct = null;
+      let error = null;
 
-      // 2. If no match and numeric ID exists, try matching as number
-      if (!dbProduct && parsedId !== null) {
-        const { data: numProduct, error: numError } = await supabase
+      // 1. Try querying with integer ID if numeric parsing succeeds
+      if (numericId !== null && !isNaN(numericId)) {
+        const res = await supabase
           .from("products")
           .select("*")
-          .eq("id", parsedId)
+          .eq("id", numericId)
           .maybeSingle();
 
-        if (!numError && numProduct) {
-          dbProduct = numProduct;
-          error = null;
-        }
+        dbProduct = res.data;
+        error = res.error;
+      }
+
+      // 2. Fallback: try querying string exact match if integer match didn't find anything
+      if (!dbProduct) {
+        const res = await supabase
+          .from("products")
+          .select("*")
+          .eq("id", rawId)
+          .maybeSingle();
+
+        dbProduct = res.data;
+        if (!error) error = res.error;
       }
 
       if (error || !dbProduct) {
-        console.error("Supabase Single Product Fetch Error or Not Found:", error);
+        console.error("Supabase Product Fetch Error or Not Found:", error);
         return NextResponse.json({ product: null });
       }
 
