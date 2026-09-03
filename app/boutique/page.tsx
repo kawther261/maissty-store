@@ -36,11 +36,17 @@ function BoutiqueContent() {
     const loadBoutiqueProducts = async () => {
       setLoading(true);
       try {
-        const res = await fetch("/api/product", { cache: "no-store" });
+        // 🛠️ FETCH FROM PLURAL API ENDPOINT (/api/products)
+        const res = await fetch("/api/products", { cache: "no-store" });
         const data = await res.json();
 
-        if (data && Array.isArray(data.products)) {
-          const normalized = data.products
+        console.log("Boutique API Response:", data);
+
+        // Accept array directly or nested inside data.products
+        const rawList = Array.isArray(data) ? data : (data && Array.isArray(data.products) ? data.products : []);
+
+        if (rawList.length > 0) {
+          const normalized = rawList
             .map((p: any) => {
               if (!p) return null;
 
@@ -90,9 +96,12 @@ function BoutiqueContent() {
             .filter(Boolean);
 
           setProducts(normalized);
+        } else {
+          setProducts([]);
         }
       } catch (err) {
         console.error("Erreur lors du chargement des produits :", err);
+        setProducts([]);
       } finally {
         setLoading(false);
       }
@@ -101,7 +110,7 @@ function BoutiqueContent() {
     loadBoutiqueProducts();
   }, [searchParams]);
 
-  // Safe client filter
+  // Client filter
   const filteredProducts = products.filter((p) => {
     if (!p) return false;
     const name = String(p.name || "").toLowerCase();
@@ -110,7 +119,7 @@ function BoutiqueContent() {
     const query = String(searchQuery || "").toLowerCase().trim();
 
     const matchesCategory =
-      selectedCategory === "all" || cat === selectedCategory.toLowerCase();
+      selectedCategory === "all" || cat.includes(selectedCategory.toLowerCase());
     const matchesSearch =
       !query || name.includes(query) || desc.includes(query) || cat.includes(query);
 
