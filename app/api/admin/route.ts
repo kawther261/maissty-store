@@ -20,7 +20,7 @@ const cleanImageUrl = (url: string) => {
 // ==========================================
 export async function GET() {
   try {
-    // 1️⃣ Récupérer les produits depuis Supabase (Sorted by ID to prevent missing column error)
+    // 1️⃣ Récupérer les produits depuis Supabase
     const { data: dbProducts, error: prodError } = await supabase
       .from("products")
       .select("*")
@@ -67,7 +67,7 @@ export async function GET() {
       deliveryType: "domicile",
       itemsSummary: o.instructions || "Articles",
       total: o.total,
-      status: o.status === "livre" ? "livre" : "en_cours"
+      status: o.status || "en_cours"
     }));
 
     return NextResponse.json({ products, orders });
