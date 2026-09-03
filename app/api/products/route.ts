@@ -46,23 +46,43 @@ const sanitizeProduct = (p: any) => {
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
+    const rawId = searchParams.get("id");
 
-    if (id) {
-      const { data: dbProduct, error } = await supabase
+    if (rawId) {
+      // Extract numeric value from IDs like "prod-10" -> "10"
+      const cleanNumericId = rawId.replace(/\D/g, "");
+      const parsedId = cleanNumericId ? parseInt(cleanNumericId, 10) : null;
+
+      // 1. First try matching exact raw string ID
+      let { data: dbProduct, error } = await supabase
         .from("products")
         .select("*")
-        .eq("id", id)
-        .single();
+        .eq("id", rawId)
+        .maybeSingle();
 
-      if (error) {
-        console.error("Supabase Single Product Fetch Error:", error);
+      // 2. If no match and numeric ID exists, try matching as number
+      if (!dbProduct && parsedId !== null) {
+        const { data: numProduct, error: numError } = await supabase
+          .from("products")
+          .select("*")
+          .eq("id", parsedId)
+          .maybeSingle();
+
+        if (!numError && numProduct) {
+          dbProduct = numProduct;
+          error = null;
+        }
+      }
+
+      if (error || !dbProduct) {
+        console.error("Supabase Single Product Fetch Error or Not Found:", error);
         return NextResponse.json({ product: null });
       }
 
       return NextResponse.json({ product: sanitizeProduct(dbProduct) });
     }
 
+    // Fetch all products if no ID is passed
     const { data: dbProducts, error } = await supabase
       .from("products")
       .select("*")
