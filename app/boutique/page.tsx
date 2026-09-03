@@ -22,9 +22,6 @@ function BoutiqueContent() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
 
-  // State to control side drawer
-  const [isCartOpen, setIsCartOpen] = useState(false);
-
   useEffect(() => {
     const categoryParam = searchParams.get("category") || "all";
     const searchParam = searchParams.get("search") || "";
@@ -35,13 +32,9 @@ function BoutiqueContent() {
     const loadBoutiqueProducts = async () => {
       setLoading(true);
       try {
-        // 🛠️ FETCH FROM PLURAL API ENDPOINT (/api/products)
         const res = await fetch("/api/products", { cache: "no-store" });
         const data = await res.json();
 
-        console.log("Boutique API Response:", data);
-
-        // Accept array directly or nested inside data.products
         const rawList = Array.isArray(data) ? data : (data && Array.isArray(data.products) ? data.products : []);
 
         if (rawList.length > 0) {
@@ -49,7 +42,6 @@ function BoutiqueContent() {
             .map((p: any) => {
               if (!p) return null;
 
-              // Extract images array
               let imagesArr: string[] = [];
               if (Array.isArray(p.images)) {
                 imagesArr = p.images
@@ -57,19 +49,16 @@ function BoutiqueContent() {
                   .filter((url: string) => url !== "");
               }
 
-              // Determine primary image
               let mainImg = cleanImageUrl(p.img);
               if (!mainImg && imagesArr.length > 0) {
                 mainImg = imagesArr[0];
               }
 
-              // Fallback SVG placeholder
               if (!mainImg) {
                 mainImg =
                   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' fill='%23f0ddd8'><rect width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%238b6860' font-family='sans-serif' font-size='14'>Pas d'image</text></svg>";
               }
 
-              // Normalize category string
               let catStr = "parfums";
               if (typeof p.category === "string") {
                 catStr = p.category;
@@ -109,7 +98,6 @@ function BoutiqueContent() {
     loadBoutiqueProducts();
   }, [searchParams]);
 
-  // Client filter
   const filteredProducts = products.filter((p) => {
     if (!p) return false;
     const name = String(p.name || "").toLowerCase();
@@ -140,6 +128,10 @@ function BoutiqueContent() {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("search");
     router.push(`/boutique?${params.toString()}`);
+  };
+
+  const handleAddToCart = () => {
+    router.push("/panier");
   };
 
   return (
@@ -201,14 +193,11 @@ function BoutiqueContent() {
             <ProductCard
               key={prod.id}
               product={prod}
-              onAddToCart={() => setIsCartOpen(true)}
+              onAddToCart={handleAddToCart}
             />
           ))}
         </div>
       )}
-
-      {/* Cart Side Drawer */}
-  
     </div>
   );
 }
