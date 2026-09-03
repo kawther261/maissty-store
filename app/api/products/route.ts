@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase } from "../../lib/supabase";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const cleanImageUrl = (url: string) => {
@@ -14,14 +14,20 @@ const cleanImageUrl = (url: string) => {
 
 const sanitizeProduct = (p: any) => {
   if (!p) return null;
-  let rawImgs = Array.isArray(p.images) ? p.images : [];
+  
+  let rawImgs = Array.isArray(p.images) 
+    ? p.images 
+    : (typeof p.images === "string" ? [p.images] : []);
+    
   let rawImg = p.img || (rawImgs.length > 0 ? rawImgs[0] : "");
   let cleanImgs = rawImgs.map((img: string) => cleanImageUrl(img));
   let cleanImg = cleanImageUrl(rawImg);
 
-  if (cleanImgs.length === 0 && cleanImg) cleanImgs = [cleanImg];
+  if (cleanImgs.length === 0 && cleanImg) {
+    cleanImgs = [cleanImg];
+  }
 
-  // Extract category string cleanly whether it's joined or plain string
+  // Extract category string cleanly
   let categoryName = "parfums";
   if (typeof p.category === "string") {
     categoryName = p.category;
@@ -59,22 +65,23 @@ export async function GET(req: Request) {
         if (!error && data) {
           dbProduct = data;
         } else {
-          // Retry without category join if relation isn't defined in foreign keys
+          // Retry without category join fallback
           const { data: fallbackData } = await supabase
             .from("products")
             .select("*")
             .eq("id", numericId)
             .maybeSingle();
+            
           dbProduct = fallbackData;
         }
       }
 
-      // 2. Try exact string match lookup if integer match was empty and rawId is non-numeric
+      // 2. Try exact string match lookup on `id` or `slug`
       if (!dbProduct) {
         const { data, error } = await supabase
           .from("products")
           .select("*, category:categories(name)")
-          .eq("id", rawId)
+          .or(`id.eq.${rawId},slug.eq.${rawId}`)
           .maybeSingle();
 
         if (!error && data) {
@@ -83,41 +90,57 @@ export async function GET(req: Request) {
           const { data: fallbackData } = await supabase
             .from("products")
             .select("*")
-            .eq("id", rawId)
+            .or(`id.eq.${rawId},slug.eq.${rawId}`)
             .maybeSingle();
+            
           dbProduct = fallbackData;
         }
       }
 
       if (!dbProduct) {
-        return NextResponse.json({ product: null });
+        return NextResponse.json(
+          { product: null, message: "Product not found" },
+          { status: 404, headers: { "Cache-Control": "no-store, max-age=0" } }
+        );
       }
 
-      return NextResponse.json({ product: sanitizeProduct(dbProduct) });
+      return NextResponse.json(
+        { product: sanitizeProduct(dbProduct) },
+        { headers: { "Cache-Control": "no-store, max-age=0" } }
+      );
     }
 
-    // Fetch all products if no ID is provided
+    // 3. Fetch all products if no ID parameter is passed
     const { data: dbProducts, error } = await supabase
       .from("products")
       .select("*, category:categories(name)")
       .order("created_at", { ascending: false });
 
     if (error) {
-      // Fallback query if categories join fails
+      // Fallback query if categories foreign key relation is not set up
       const { data: fallbackProducts } = await supabase
         .from("products")
         .select("*")
         .order("created_at", { ascending: false });
 
-      return NextResponse.json({
-        products: (fallbackProducts || []).map(sanitizeProduct).filter(Boolean)
-      });
+      return NextResponse.json(
+        {
+          products: (fallbackProducts || []).map(sanitizeProduct).filter(Boolean)
+        },
+        { headers: { "Cache-Control": "no-store, max-age=0" } }
+      );
     }
 
-    return NextResponse.json({
-      products: (dbProducts || []).map(sanitizeProduct).filter(Boolean)
-    });
+    return NextResponse.json(
+      {
+        products: (dbProducts || []).map(sanitizeProduct).filter(Boolean)
+      },
+      { headers: { "Cache-Control": "no-store, max-age=0" } }
+    );
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message || "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
