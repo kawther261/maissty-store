@@ -28,26 +28,29 @@ export default function AdminDashboard() {
   const [formPrice, setFormPrice] = useState("");
   const [formCategory, setFormCategory] = useState("parfums");
   const [formDesc, setFormDesc] = useState("");
-  const [formImagesInput, setFormImagesInput] = useState("");
+  
+  // ☁️ Store array of Cloudinary URLs directly instead of raw text string
+  const [formImages, setFormImages] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   // 🔄 Charger les données depuis Supabase
-const loadData = async () => {
-  try {
-    // 1. Fetch products from your /api/products route
-    const productsRes = await fetch("/api/products");
-    const productsData = await productsRes.json();
-    if (productsData.products) setProducts(productsData.products);
+  const loadData = async () => {
+    try {
+      // 1. Fetch products from your /api/products route
+      const productsRes = await fetch("/api/products");
+      const productsData = await productsRes.json();
+      if (productsData.products) setProducts(productsData.products);
 
-    // 2. Fetch orders from your admin endpoint (if separate)
-    const adminRes = await fetch("/api/admin");
-    const adminData = await adminRes.json();
-    if (adminData.orders) setOrders(adminData.orders);
-  } catch (err) {
-    console.error("Erreur de chargement des données cloud:", err);
-  }
-};
+      // 2. Fetch orders from your admin endpoint
+      const adminRes = await fetch("/api/admin");
+      const adminData = await adminRes.json();
+      if (adminData.orders) setOrders(adminData.orders);
+    } catch (err) {
+      console.error("Erreur de chargement des données cloud:", err);
+    }
+  };
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -59,6 +62,53 @@ const loadData = async () => {
     e.preventDefault();
     if (adminPassword === "admin123") setIsAuthenticated(true);
     else alert("Mot de passe incorrect.");
+  };
+
+  // ☁️ Direct Cloudinary Upload Handler (Works on Mobile & Desktop)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    const uploadedUrls: string[] = [...formImages];
+
+    const cloudName = "wigng2m5";
+    const uploadPreset = "maissty_preset"; // Ensure this unsigned preset is created in your Cloudinary Dashboard
+
+    for (let i = 0; i < files.length; i++) {
+      const formData = new FormData();
+      formData.append("file", files[i]);
+      formData.append("upload_preset", uploadPreset);
+
+      try {
+        const res = await fetch(
+          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        const data = await res.json();
+        if (data.secure_url) {
+          uploadedUrls.push(data.secure_url);
+        } else {
+          console.error("Cloudinary upload error:", data);
+          alert("Erreur Cloudinary : Vérifiez que la configuration unsigned est activée.");
+        }
+      } catch (err) {
+        console.error("Failed to upload image:", err);
+        alert("Échec du téléversement vers Cloudinary.");
+      }
+    }
+
+    setFormImages(uploadedUrls);
+    setIsUploading(false);
+  };
+
+  // 🗑️ Delete Image Preview
+  const handleRemoveImage = (indexToRemove: number) => {
+    setFormImages(formImages.filter((_, idx) => idx !== indexToRemove));
   };
 
   // 🪄 Drag & Drop Handler
@@ -107,14 +157,8 @@ const loadData = async () => {
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Parse image list from text area input
-    const parsedImages = formImagesInput
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0)
-      .map(cleanImageUrl);
-
-    const primaryImage = parsedImages.length > 0 ? parsedImages[0] : "/placeholder.jpg";
+    const cleanedImages = formImages.map(cleanImageUrl);
+    const primaryImage = cleanedImages.length > 0 ? cleanedImages[0] : "/placeholder.jpg";
 
     const payload = {
       id: editingId || `prod-${Date.now()}`,
@@ -123,7 +167,7 @@ const loadData = async () => {
       category: formCategory,
       description: formDesc,
       img: primaryImage,
-      images: parsedImages.length > 0 ? parsedImages : [primaryImage]
+      images: cleanedImages.length > 0 ? cleanedImages : [primaryImage]
     };
 
     try {
@@ -163,7 +207,7 @@ const loadData = async () => {
     setFormPrice(""); 
     setFormCategory("parfums"); 
     setFormDesc(""); 
-    setFormImagesInput("");
+    setFormImages([]);
     setIsModalOpen(true);
   };
   
@@ -173,7 +217,7 @@ const loadData = async () => {
     setFormPrice(p.price ? p.price.toString() : "0"); 
     setFormCategory(p.category || "parfums"); 
     setFormDesc(p.description || p.shortDesc || ""); 
-    setFormImagesInput(Array.isArray(p.images) ? p.images.join(", ") : (p.img || ""));
+    setFormImages(Array.isArray(p.images) && p.images.length > 0 ? p.images : p.img ? [p.img] : []);
     setIsModalOpen(true);
   };
 
@@ -387,19 +431,56 @@ const loadData = async () => {
                 <label className="block font-bold text-[#2C1810] uppercase tracking-wider mb-1">Description</label>
                 <textarea value={formDesc} onChange={(e) => setFormDesc(e.target.value)} rows={2} className="w-full px-3 py-2 border border-[#F0DDD8] rounded outline-none bg-[#FDF6F3]"></textarea>
               </div>
+
+              {/* 📱💻 Direct File Upload Button */}
               <div>
-                <label className="block font-bold text-[#2C1810] uppercase tracking-wider mb-2">URLs des Images Cloudinary (séparées par une virgule)</label>
-                <textarea
-                  value={formImagesInput}
-                  onChange={(e) => setFormImagesInput(e.target.value)}
-                  placeholder="https://res.cloudinary.com/wigng2m5/image/upload/1.jpg, https://..."
-                  rows={3}
-                  className="w-full px-3 py-2 border border-[#F0DDD8] rounded outline-none bg-[#FDF6F3] font-mono text-[11px]"
-                />
+                <label className="block font-bold text-[#2C1810] uppercase tracking-wider mb-1">Images du produit (Depuis votre appareil)</label>
+                <div className="flex items-center justify-center w-full">
+                  <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-[#F0DDD8] border-dashed rounded-lg cursor-pointer bg-[#FDF6F3] hover:bg-[#f8eae5] transition-colors">
+                    <div className="flex flex-col items-center justify-center pt-2 pb-2">
+                      <Upload size={20} className="text-[#8B6860] mb-1" />
+                      <p className="text-[11px] text-[#2C1810] font-semibold">Cliquez pour choisir une photo</p>
+                      <p className="text-[9px] text-[#8B6860]">Galerie smartphone ou fichier PC</p>
+                    </div>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      multiple 
+                      onChange={handleFileUpload} 
+                      disabled={isUploading} 
+                      className="hidden" 
+                    />
+                  </label>
+                </div>
+
+                {isUploading && (
+                  <p className="mt-2 text-[10px] font-semibold text-amber-700 animate-pulse text-center">
+                    ⏳ Téléversement vers Cloudinary...
+                  </p>
+                )}
+
+                {/* 🖼️ Previews */}
+                {formImages.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {formImages.map((img, idx) => (
+                      <div key={idx} className="relative h-14 w-14 rounded border border-[#F0DDD8] overflow-hidden shadow-sm group">
+                        <img src={cleanImageUrl(img)} alt="Aperçu" className="h-full w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(idx)}
+                          className="absolute top-0.5 right-0.5 bg-red-600 text-white rounded-full p-0.5 shadow hover:bg-red-700"
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+
               <div className="pt-2 flex justify-end gap-3">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-[#F0DDD8] rounded text-[#8B6860] uppercase font-medium">Annuler</button>
-                <button type="submit" className="px-5 py-2 bg-black text-white rounded uppercase font-medium cursor-pointer">Enregistrer</button>
+                <button type="submit" disabled={isUploading} className="px-5 py-2 bg-black text-white rounded uppercase font-medium cursor-pointer disabled:opacity-50">Enregistrer</button>
               </div>
             </form>
           </div>
