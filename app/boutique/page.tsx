@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ProductCard } from "../../components/ProductCard";
+import { CartDrawer } from "../../components/CartDrawer";
 import { X } from "lucide-react";
 
 function BoutiqueContent() {
@@ -10,6 +11,9 @@ function BoutiqueContent() {
   const [products, setProducts] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  
+  // State to control the side drawer
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -73,18 +77,18 @@ function BoutiqueContent() {
   }, [searchParams]);
 
   // Completely safe filter preventing n.indexOf errors
- const filteredProducts = products.filter((p) => {
-  if (!p) return false;
-  const name = String(p.name || "").toLowerCase();
-  const desc = String(p.shortDesc || p.description || "").toLowerCase();
-  const cat = String(p.category || "all").toLowerCase();
-  const query = String(searchQuery || "").toLowerCase().trim();
+  const filteredProducts = products.filter((p) => {
+    if (!p) return false;
+    const name = String(p.name || "").toLowerCase();
+    const desc = String(p.shortDesc || p.description || "").toLowerCase();
+    const cat = String(p.category || "all").toLowerCase();
+    const query = String(searchQuery || "").toLowerCase().trim();
 
-  const matchesCategory = selectedCategory === "all" || cat === selectedCategory.toLowerCase();
-  const matchesSearch = !query || name.includes(query) || desc.includes(query) || cat.includes(query);
+    const matchesCategory = selectedCategory === "all" || cat === selectedCategory.toLowerCase();
+    const matchesSearch = !query || name.includes(query) || desc.includes(query) || cat.includes(query);
 
-  return matchesCategory && matchesSearch;
-});
+    return matchesCategory && matchesSearch;
+  });
 
   const clearSearchFilter = () => {
     window.location.href = "/boutique" + (selectedCategory !== "all" ? `?category=${selectedCategory}` : "");
@@ -130,10 +134,17 @@ function BoutiqueContent() {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
           {filteredProducts.map((prod) => (
-            <ProductCard key={prod.id} product={prod} />
+            <ProductCard 
+              key={prod.id} 
+              product={prod} 
+              onAddToCart={() => setIsCartOpen(true)}
+            />
           ))}
         </div>
       )}
+
+      {/* Cart Side Drawer */}
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { ShoppingBag, Heart } from "lucide-react";
 import Link from "next/link";
+import { useCartStore } from "../store/useCartStore";
 
 interface ProductCardProps {
   product?: {
@@ -14,10 +15,12 @@ interface ProductCardProps {
     category?: string;
     shortDesc?: string;
   };
+  onAddToCart?: () => void;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
+  const addItem = useCartStore((s) => s.addItem);
 
   // Safe extractors to prevent any null/undefined crashes
   const productId = product?.id || "unknown";
@@ -112,6 +115,25 @@ export function ProductCard({ product }: ProductCardProps) {
     }
   };
 
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // 1. Add item to Zustand cart store
+    addItem({
+      id: productId,
+      name: productName,
+      price: productPrice,
+      img: productImg,
+      quantity: 1,
+    });
+
+    // 2. Trigger side drawer callback
+    if (onAddToCart) {
+      onAddToCart();
+    }
+  };
+
   return (
     <div className="bg-white rounded-3xl border border-[#F0DDD8]/60 shadow-xs overflow-hidden flex flex-col justify-between group p-4 space-y-4 relative hover:shadow-md transition-all duration-300">
       
@@ -152,7 +174,12 @@ export function ProductCard({ product }: ProductCardProps) {
           <span className="font-inter font-bold text-xs text-black">
             {productPrice.toLocaleString("fr-FR")} DA
           </span>
-          <button className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center hover:bg-neutral-900 transition-colors cursor-pointer" type="button">
+          <button 
+            onClick={handleAddToCart}
+            className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center hover:bg-neutral-900 transition-colors cursor-pointer" 
+            type="button"
+            aria-label="Ajouter au panier"
+          >
             <ShoppingBag size={13} />
           </button>
         </div>
