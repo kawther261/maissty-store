@@ -1,9 +1,11 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useCartStore } from "../../../store/useCartStore"; 
 import { ShoppingBag, Star, ArrowLeft, Heart, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
 import Link from "next/link";
+import { CartDrawer } from "@/components/CartDrawer"; // 👈 Import your CartDrawer component
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -14,6 +16,9 @@ export default function ProductDetailPage() {
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
+
+  // 🛒 STATE FOR CART DRAWER (Replaces native browser alert)
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   // 📝 ÉTATS POUR LES VRAIS AVIS
   const [reviews, setReviews] = useState<any[]>([]);
@@ -27,25 +32,24 @@ export default function ProductDetailPage() {
     
     const loadProductAndReviews = async () => {
       try {
-        // 1. Charger le produit en direct depuis Neon Cloud par son ID
-        const res = await fetch(`/api/products?id=${productId}`, { cache: "no-store" });
+        // 1. Charger le produit depuis l'API (/api/product)
+        const res = await fetch(`/api/product?id=${productId}`, { cache: "no-store" });
         const data = await res.json();
         
         if (data.product) {
           const p = data.product;
-          // Normalisation des données pour ton interface graphique
           setProduct({
             ...p,
             category: p.category?.name || p.category || "parfums"
           });
         }
       } catch (err) {
-        console.error("Erreur lors du chargement du produit depuis Neon :", err);
+        console.error("Erreur lors du chargement du produit :", err);
       } finally {
         setLoading(false);
       }
 
-      // 2. Charger les vrais avis de ce produit spécifique (conserve le localStorage pour les avis)
+      // 2. Charger les avis
       const savedReviews = localStorage.getItem(`maisssty_reviews_${productId}`);
       if (savedReviews) {
         setReviews(JSON.parse(savedReviews));
@@ -92,11 +96,12 @@ export default function ProductDetailPage() {
     setActiveImageIdx((prevIdx) => prevIdx === productImages.length - 1 ? 0 : prevIdx + 1);
   };
 
+  // 🛍️ FIX: Open slide-over drawer on add to cart instead of triggering browser alert
   const handleAddToCart = () => {
     for (let i = 0; i < quantity; i++) {
       addItem(product);
     }
-    alert(`✨ ${quantity}x ${product.name} ajouté(s) au panier !`);
+    setIsCartOpen(true);
   };
 
   const handleAddReview = (e: React.FormEvent) => {
@@ -118,7 +123,6 @@ export default function ProductDetailPage() {
     setNewReviewName("");
     setNewReviewComment("");
     setNewReviewRating(5);
-    alert("❤️ Merci ! Votre avis a été publié avec succès.");
   };
 
   const averageRating = reviews.length > 0 
@@ -179,7 +183,7 @@ export default function ProductDetailPage() {
 
             <div className="space-y-2">
               <h4 className="text-[11px] uppercase font-bold text-[#8B6860]">Description</h4>
-              <p className="text-xs sm:text-sm text-[#8B6860] leading-relaxed whitespace-pre-line">{product.shortDesc || "Aucune description rédigée."}</p>
+              <p className="text-xs sm:text-sm text-[#8B6860] leading-relaxed whitespace-pre-line">{product.shortDesc || product.description || "Aucune description rédigée."}</p>
             </div>
 
             <div className="space-y-4 pt-4">
@@ -253,6 +257,9 @@ export default function ProductDetailPage() {
         </div>
 
       </div>
+
+      {/* 🛒 SLIDING CART DRAWER */}
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </div>
   );
 }
