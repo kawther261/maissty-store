@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCartStore } from "../../../store/useCartStore"; 
 import { ShoppingBag, Star, ArrowLeft, Heart, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
 import Link from "next/link";
-import { CartDrawer } from "@/components/CartDrawer";
 
 export default function ProductDetailPage() {
   const params = useParams();
+  const router = useRouter();
   
   // Extract raw ID parameter
   const rawId = Array.isArray(params?.id) ? params.id[0] : params?.id;
@@ -21,9 +21,6 @@ export default function ProductDetailPage() {
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
-
-  // 🛒 STATE FOR CART DRAWER
-  const [isCartOpen, setIsCartOpen] = useState(false);
 
   // 📝 ÉTATS POUR LES VRAIS AVIS
   const [reviews, setReviews] = useState<any[]>([]);
@@ -128,7 +125,7 @@ export default function ProductDetailPage() {
     for (let i = 0; i < quantity; i++) {
       addItem(product);
     }
-    setIsCartOpen(true);
+    router.push("/panier");
   };
 
   const handleAddReview = (e: React.FormEvent) => {
@@ -284,9 +281,6 @@ export default function ProductDetailPage() {
         </div>
 
       </div>
-
-      {/* 🛒 SLIDING CART DRAWER */}
-      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </div>
   );
 }
